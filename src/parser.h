@@ -1,0 +1,6 @@
+#ifndef VUT_IFJ_PROJECT_PARSER_H
+#define VUT_IFJ_PROJECT_PARSER_H
+
+void hello(void);
+
+#endif //VUT_IFJ_PROJECT_PARSER_H
