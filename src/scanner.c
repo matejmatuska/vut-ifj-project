@@ -30,8 +30,8 @@ bool success = false;
 #define EXP_W_SIGN_STATE 315 //F
 #define START_OF_STRING_STATE 316
 #define START_OF_ESCAPE_SEQ_STATE 317
-#define ASCII_FIRST_VALUE_STATE 318
-#define ASCII_SECOND_VALUE_STATE 319
+#define ASCII_SECOND_VALUE_STATE 318
+#define ASCII_THIRD_VALUE_STATE 319
 #define STRING_STATE 320 //F
 #define MUL_STATE 321    //F
 #define DIV_STATE 322    //F
@@ -107,6 +107,8 @@ int make_string(token_t *token, dynamic_string_t *value)
                 memcpy(substring, &(value->s)[i + 1], 3);
                 substring[3] = '\0';
                 int ascii = atoi(substring);
+                if(ascii<0 || ascii>255)
+                error(LEX_ERR,value);
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
@@ -301,6 +303,7 @@ int get_next_token(token_t *current_token)
             else
             {
                 current_token->type = TOKEN_TYPE_MINUS;
+                ungetc(c,source);
                 return 0;
             }
             break;
@@ -501,16 +504,6 @@ int get_next_token(token_t *current_token)
             else if (('0' <= c) && (c <= '2'))
             {
                 dyn_str_add_character(value, c);
-                state = ASCII_FIRST_VALUE_STATE;
-            }
-            else
-                error(LEX_ERR, value);
-            break;
-
-        case ASCII_FIRST_VALUE_STATE:
-            if (('0' <= c) && (c <= '5'))
-            {
-                dyn_str_add_character(value, c);
                 state = ASCII_SECOND_VALUE_STATE;
             }
             else
@@ -518,7 +511,17 @@ int get_next_token(token_t *current_token)
             break;
 
         case ASCII_SECOND_VALUE_STATE:
-            if (('1' <= c) && (c <= '5'))
+            if (('0' <= c) && (c <= '9'))
+            {
+                dyn_str_add_character(value, c);
+                state = ASCII_THIRD_VALUE_STATE;
+            }
+            else
+                error(LEX_ERR, value);
+            break;
+
+        case ASCII_THIRD_VALUE_STATE:
+            if (('0' <= c) && (c <= '9'))
             {
                 dyn_str_add_character(value, c);
                 state = START_OF_STRING_STATE;
@@ -529,12 +532,14 @@ int get_next_token(token_t *current_token)
 
         case STRING_STATE:
             current_token->type = TOKEN_TYPE_STR;
+            ungetc(c,source);
             make_string(current_token, value);
                 return 0;
             break;
 
         case MUL_STATE:
             current_token->type = TOKEN_TYPE_MUL_SIGN;
+            ungetc(c,source);
            return 0;
             break;
 
@@ -544,6 +549,7 @@ int get_next_token(token_t *current_token)
             else
             {
                 current_token->type = TOKEN_TYPE_DIV_SIGN;
+                ungetc(c,source);
                     return 0;
             }
             break;
@@ -561,6 +567,7 @@ int get_next_token(token_t *current_token)
             else
             {
                 current_token->type = TOKEN_TYPE_LESS;
+                ungetc(c,source);
                     return 0;
             }
             break;
@@ -571,52 +578,62 @@ int get_next_token(token_t *current_token)
             else
             {
                 current_token->type = TOKEN_TYPE_GREATER;
+                ungetc(c,source);
                     return 0;
             }
             break;
 
         case LENGTH_STATE:
             current_token->type = TOKEN_TYPE_LENGTH;
+            ungetc(c,source);
                 return 0;
             break;
 
         case DEF_STATE:
             current_token->type = TOKEN_TYPE_DEF;
+            ungetc(c,source);
                 return 0;
             break;
 
         case LEFT_BRACKET_STATE:
             current_token->type = TOKEN_TYPE_LEFTB;
+            ungetc(c,source);
                 return 0;
             break;
 
         case RIGHT_BRACKET_STATE:
             current_token->type = TOKEN_TYPE_RIGHTB;
+            ungetc(c,source);
                 return 0;
             break;
 
         case PLUS_STATE:
             current_token->type = TOKEN_TYPE_PLUS;
+            ungetc(c,source);
                 return 0;
             break;
 
         case LESSEQ_STATE:
             current_token->type = TOKEN_TYPE_LESSEQ;
+            ungetc(c,source);
                 return 0;
             break;
 
         case GREATEREQ_STATE:
             current_token->type = TOKEN_TYPE_GREATEREQ;
+            ungetc(c,source);
                 return 0;
             break;
 
         case COMPARING_2_STATE:
             current_token->type = TOKEN_TYPE_COMPARING2;
+            ungetc(c,source);
                 return 0;
             break;
 
         case WN_DIV_STATE:
             current_token->type = TOKEN_TYPE_WN_DIV_SIGN;
+            ungetc(c,source);
                 return 0;
             break;
 
@@ -626,6 +643,7 @@ int get_next_token(token_t *current_token)
             else
             {
                 current_token->type = TOKEN_TYPE_EQUAL;
+                ungetc(c,source);
                     return 0;
             }
             break;
