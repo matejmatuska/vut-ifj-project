@@ -53,13 +53,13 @@ typedef enum
   KW_WHILE
 } keyword;
 
-union token_attribute
+typedef union token_attribute
 {
   int integer_value;
   double double_value;
   dynamic_string_t *string;
   keyword keyword;
-} token_attribute;
+} token_attribute_t;
 
 typedef struct token
 {
