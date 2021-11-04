@@ -49,7 +49,10 @@ bool success = false;
 #define WN_DIV_STATE 334        //F
 #define EQUAL_STATE 335         //F
 #define COMPARING_STATE 336     //F
-#define EOF_STATE 337 //F
+#define EOF_STATE 337           //F
+#define COLON_STATE 338         //F
+#define DOT_STATE 339           //F
+#define DOUBLE_DOT_STATE 340     //F
 
 int error(Error type, dynamic_string_t *value)
 {
@@ -253,7 +256,11 @@ int get_next_token(token_t *current_token)
         switch (state)
         {
         case START_STATE:
-            if (c == '-')
+            if (c == ',')
+                state = COLON_STATE;
+            else if (c == '.')
+                state = DOT_STATE;
+            else if (c == '-')
                 state = MINUS_STATE;
             else if (c == EOF)
                 state = EOF_STATE;
@@ -652,6 +659,27 @@ int get_next_token(token_t *current_token)
             current_token->type = TOKEN_TYPE_COMPARING;
                 return 0;
             break;
+
+        case COLON_STATE:
+            current_token->type = TOKEN_TYPE_COLON;
+            return 0;
+            break;
+
+        case DOT_STATE:
+            if (c == '.')
+            {
+                state = DOUBLE_DOT_STATE;              
+            }
+            else
+                error(LEX_ERR, value);
+            break;
+
+        case DOUBLE_DOT_STATE:
+            current_token->type = TOKEN_TYPE_DOUBLE_DOT;
+            ungetc(c, source);
+            return 0;
+            break;
+
         case EOF_STATE:
             current_token->type = TOKEN_TYPE_EOF;
                 return 0;

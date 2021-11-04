@@ -30,6 +30,8 @@ typedef enum
   TOKEN_TYPE_DEF,         // :
   TOKEN_TYPE_LEFTB,       // (
   TOKEN_TYPE_RIGHTB,       // )
+  TOKEN_TYPE_COLON,        // ,
+  TOKEN_TYPE_DOUBLE_DOT,	//..
   TOKEN_TYPE_EOF
 
 } token_type;
