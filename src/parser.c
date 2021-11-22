@@ -15,6 +15,9 @@
 #define  TOK_IS_TYPE(kw) \
 (token->type == kw)
 
+#define TOK_IS_OP() \
+(token->type == TOKEN_TYPE_MINUS || token->type == TOKEN_TYPE_PLUS || token->type == TOKEN_TYPE_DIV_SIGN || token->type == TOKEN_TYPE_MUL_SIGN )
+
 token_t *token;
 
 
@@ -46,6 +49,7 @@ bool program() {
 
     free(token);
     return eof_res;
+
 }
 
 bool body() {
@@ -314,6 +318,7 @@ bool st_return(){
     return true;
 }
 
+//Can be Macro for better usage. Checks if given ID is id of variable or function
 bool st_fnc_id(){
 
 }
@@ -351,12 +356,35 @@ bool next_exp(){
 
 bool option(){
     //TODO Check if function or variable
+    //Have to add two other function for function ID case and variable case
     get_next_token(token);
     return true;
 }
 
-bool expr() {
+/*
+ * Expression parser
+ * Return: true if expression is correctly given
+ *         false if there is mistake
+ *  Notes: Works separatedly from main rules, must be called by author
+ */
+bool expr(token_t prevTok) {
+    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
     get_next_token(token);
+    if (TOK_IS_TYPE(TOKEN_TYPE_INT) && prevTok.type == TOKEN_TYPE_INT ) {
+
+    } else if (TOK_IS_TYPE(TOKEN_TYPE_STR) && prevTok.type == TOKEN_TYPE_STR ) {
+
+    } else if (TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) && prevTok.type == TOKEN_TYPE_DOUBLE ) {
+
+    } else if (TOK_IS_TYPE(TOKEN_TYPE_MINUS) && (prevTok.type == TOKEN_TYPE_INT || prevTok.type == TOKEN_TYPE_DOUBLE)) {
+
+    } else return false;
+    get_next_token(token);
+    if(!TOK_IS_OP()) {
+
+    }
+    expr(prevTok);
+
     return true;
 }
 
@@ -401,7 +429,7 @@ bool next_id(){
     get_next_token(token);
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL))
         return true;
-    if(!TOK_IS_TYPE(TOKEN_TYPE_COLON))
+    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON))
         return false;
 
     return true;
