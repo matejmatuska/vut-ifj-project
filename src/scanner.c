@@ -66,11 +66,6 @@ void get_source(FILE *file)
     source = file;
 }
 
-//void set_string(dynamic_string_t *string)
-//{
-//   dynamic_string = string;
-//}
-
 int make_number(token_t *token, dynamic_string_t *value)
 {
     if (token->type == TOKEN_TYPE_INT)

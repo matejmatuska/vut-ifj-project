@@ -6,7 +6,7 @@ BIN=proj
 run: $(BIN)
 	./$(BIN)
 
-$(BIN): main.c scanner.o parser.o dynamic_string.o
+$(BIN): main.c scanner.o parser.o dynamic_string.o symtable.o 
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
