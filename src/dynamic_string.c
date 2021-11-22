@@ -29,7 +29,7 @@ bool dyn_str_add_character(dynamic_string_t *str, char x)
 
 bool dyn_str_del_character(dynamic_string_t *str, int index)
 {
-    for (int i = index; i < str->size; i++)
+    for (size_t i = index; i < str->size; i++)
     {
         str->s[i] = str->s[i + 1];
         
@@ -40,7 +40,7 @@ bool dyn_str_del_character(dynamic_string_t *str, int index)
 
 bool dyn_str_add_string(dynamic_string_t *str, char *xstr)
 {
-    for (int i = 0; i < strlen(xstr); i++)
+    for (size_t i = 0; i < strlen(xstr); i++)
     {
         dyn_str_add_character(str, xstr[i]);
     }
@@ -51,7 +51,7 @@ bool dyn_str_compare(dynamic_string_t *str, char *xstr)
 {
     if (str->size == strlen(xstr))
     {
-        for (int i = 0; i < str->size; i++)
+        for (size_t i = 0; i < str->size; i++)
         {
             if (str->s[i] != xstr[i])
             {
@@ -65,7 +65,7 @@ bool dyn_str_compare(dynamic_string_t *str, char *xstr)
 
 void dyn_str_copy(dynamic_string_t *str1, dynamic_string_t *str2)
 {
-    for (int i = 0; i < str2->size; i++)
+    for (size_t i = 0; i < str2->size; i++)
     {
         dyn_str_add_character(str1, str2->s[i]);
     }

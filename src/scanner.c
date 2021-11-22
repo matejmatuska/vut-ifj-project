@@ -85,7 +85,7 @@ int make_number(token_t *token, dynamic_string_t *value)
 int make_string(token_t *token, dynamic_string_t *value)
 {
 
-    for (int i = 0; i < value->size; i++)
+    for (size_t i = 0; i < value->size; i++)
     {
         if (value->s[i] == '\\')
         {
@@ -290,7 +290,7 @@ int get_next_token(token_t *current_token)
                 state = LEFT_BRACKET_STATE;
             else if (c == ')')
                 state = RIGHT_BRACKET_STATE;
-            else if (('a' <= c) && (c <= 'z') || ('A' <= c) && (c <= 'Z') || (c == '_'))
+            else if ((('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z')) || (c == '_'))
             {
                 state = ID_STATE;
                 dyn_str_add_character(value, c);
@@ -362,7 +362,7 @@ int get_next_token(token_t *current_token)
             break;
 
         case ID_STATE:
-            if (('0' <= c) && (c <= '9') || ('a' <= c) && (c <= 'z') || ('A' <= c) && (c <= 'Z') || (c == '_'))
+            if ((('0' <= c) && (c <= '9')) || (('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z')) || (c == '_'))
             {
                 dyn_str_add_character(value, c);
                 state = ID_STATE;
