@@ -9,7 +9,7 @@ all : $(BIN)
 run: $(BIN)
 	./$(BIN)
 
-$(BIN): main.c scanner.o parser.o dynamic_string.o symtable.o 
+$(BIN): main.c scanner.o parser.o dynamic_string.o symtable.o ST_stack.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
