@@ -1,7 +1,11 @@
 #include "symtable.h"
 #include "error.h"
-//hash function djb2 (algorithm by dan bernstein)
-unsigned long htab_hash_function(const char *str)
+/**
+  * @desc hash function djb2 (algorithm by dan bernstein)
+  * @param  const char *str - string we want to hash
+  * @return unsigned long - hash number
+*/
+unsigned long sym_tab_hash_function(const char *str)
 {
     unsigned long hash = 5381;
         int c;
@@ -12,31 +16,40 @@ unsigned long htab_hash_function(const char *str)
         return hash;
 }
 
-// initialization of table
-htab_t *htab_init()
+/**
+  * @desc initialization of symbol table
+  * @return sym_tab_t * - initialized symbol table
+*/
+
+sym_tab_t *sym_tab_init()
 {
-	htab_t *hashtable = malloc(sizeof(htab_t) + MAX * sizeof( htab_item_t *));
-	if (hashtable == NULL)
+	sym_tab_t *hassym_table = malloc(sizeof(sym_tab_t) + MAX * sizeof( sym_tab_item_t *));
+	if (hassym_table == NULL)
 	{
 		return NULL;
 	}   
-	hashtable->size = 0;
-	hashtable->arr_size = MAX;
+	hassym_table->size = 0;
+	hassym_table->arr_size = MAX;
 	for (size_t i = 0; i < MAX; i++)
 	{
-		hashtable->element[i] = NULL;
+		hassym_table->element[i] = NULL;
 	}
-	return hashtable;
+	return hassym_table;
 }
 
-// create new item or update existing one 
-htab_item_t *htab_add_item(htab_t *t, htab_key_t key)
+/**
+  * @desc add or update item to symbol table
+  * @param  sym_tab_t *t - current symbol table
+  * @param  sym_tab_key_t key - key we want to add
+  * @return sym_tab_item_t - added item
+*/
+sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key)
 {
-	unsigned indx = htab_hash_function(key);
+	unsigned indx = sym_tab_hash_function(key);
 	size_t index = indx % t->arr_size;
 
 	// if item already exists
-	 htab_item_t *tmp = t->element[index];
+	 sym_tab_item_t *tmp = t->element[index];
 	while (tmp != NULL)
 	{
 		if (!strcmp(tmp->key, key))
@@ -49,7 +62,7 @@ htab_item_t *htab_add_item(htab_t *t, htab_key_t key)
 	}
 
 	// new item
-	 htab_item_t *new = ( htab_item_t *)malloc(sizeof( htab_item_t));
+	 sym_tab_item_t *new = ( sym_tab_item_t *)malloc(sizeof( sym_tab_item_t));
 
 	if (new == NULL)
 	{
@@ -83,8 +96,16 @@ htab_item_t *htab_add_item(htab_t *t, htab_key_t key)
 	t->size++;
 	return new;
 }
-// add data to item in hashtable
-bool htab_add_data(htab_item_t *item,htab_item_type it,htab_datatype dt,bool def,int par)
+/**
+  * @desc add data to item in symbol table
+  * @param sym_tab_item_t *item - specific item
+  * @param  sym_tab_item_type it - item type
+  * @param  sym_tab_datatype dt - data type
+  * @param  bool def - defined
+  * @param  int par - number of parameters
+  * @return sym_tab_item_t - added item
+*/
+bool sym_tab_add_data(sym_tab_item_t *item,sym_tab_item_type it,sym_tab_datatype dt,bool def,int par)
 {
 	if(!item)
 	{
@@ -97,11 +118,15 @@ bool htab_add_data(htab_item_t *item,htab_item_type it,htab_datatype dt,bool def
 	return true;
 }
 
-//delete all items in symtable
-void htab_clear(htab_t *t)
+/**
+  * @desc delete all items in symbol table
+  * @param  sym_tab_t *t - current symbol table
+  * @return nothing
+*/
+void sym_tab_clear(sym_tab_t *t)
 {
-	 htab_item_t *item;
-	 htab_item_t *ptr;
+	 sym_tab_item_t *item;
+	 sym_tab_item_t *ptr;
 	for (size_t i = 0; i < t->arr_size; i++)
 	{
 		item = t->element[i];
@@ -109,7 +134,7 @@ void htab_clear(htab_t *t)
 		{
 			ptr = item;
 			item = item->next;
-			//free((void *)ptr);
+			free((void *)ptr->key);
 			free(ptr);
 		}
 		//initialization
@@ -117,13 +142,18 @@ void htab_clear(htab_t *t)
 	}
 	t->size = 0;
 }
-//delete element from symtable
-bool htab_erase(htab_t * t, htab_key_t key)
+/**
+  * @desc delete element from symbol table
+  * @param  sym_tab_t *t - current symbol table
+  * @param  sym_tab_key_t key - key we want to delete
+  * @return bool - true if deletion was succesful
+*/
+bool sym_tab_erase(sym_tab_t * t, sym_tab_key_t key)
 {
-	unsigned indx = htab_hash_function(key);
+	unsigned indx = sym_tab_hash_function(key);
 	size_t index = indx % t->arr_size;
 	
-	htab_item_t *tmp = t->element[index];
+	sym_tab_item_t *tmp = t->element[index];
 	while(tmp != NULL)
 	{
 		// first element is a match witch key
@@ -138,7 +168,7 @@ bool htab_erase(htab_t * t, htab_key_t key)
 		// match with tmp-> next
 		else if (tmp->next != NULL && !strcmp(tmp->next->key, key))
 		{
-			struct htab_item_t *tmp_next = tmp->next->next;
+			struct sym_tab_item_t *tmp_next = tmp->next->next;
 			free(tmp->next);
 			tmp->next = tmp_next;
 			t->size--;
@@ -153,13 +183,18 @@ bool htab_erase(htab_t * t, htab_key_t key)
 	}
 	return false;
 }
-// find specific item
-htab_item_t *htab_find_in_table(htab_t *t, htab_key_t key)
+/**
+  * @desc find item in symbol table
+  * @param  sym_tab_t *t - current symbol table
+  * @param  sym_tab_key_t key - key we want to find
+  * @return sym_tab_item_t - found item
+*/
+sym_tab_item_t *sym_tab_find_in_table(sym_tab_t *t, sym_tab_key_t key)
 {
-	unsigned indx = htab_hash_function(key);
+	unsigned indx = sym_tab_hash_function(key);
 	size_t index = indx % t->arr_size;
 
-	htab_item_t *item = t->element[index];
+	sym_tab_item_t *item = t->element[index];
 
 	while(item != NULL)
 	{
@@ -177,10 +212,15 @@ htab_item_t *htab_find_in_table(htab_t *t, htab_key_t key)
 }
 
 
-// make function *f for each item
-void htab_for_each(const htab_t * t, void (*f)(htab_item_t *item))
+/**
+  * @desc make action for every item in symbol table
+  * @param  sym_tab_t *t - current symbol table
+  * @param  void (*f)(sym_tab_item_t) item - function we want to call
+  * @return nothing
+*/
+void sym_tab_for_each(const sym_tab_t * t, void (*f)(sym_tab_item_t *item))
 {
-	htab_item_t *item ;
+	sym_tab_item_t *item ;
 	for(unsigned i = 0; i < t->arr_size; i++)
 	{ 
 		item = t->element[i]; 
@@ -193,57 +233,71 @@ void htab_for_each(const htab_t * t, void (*f)(htab_item_t *item))
 }
 
 //free
-void htab_free(htab_t * t)
+void sym_tab_free(sym_tab_t * t)
 {
-    htab_clear(t);
+    sym_tab_clear(t);
     free(t);
 }
 
 
-// move one table to another
-htab_t *htab_move(htab_t *from)
+/**
+  * @desc move one table to another
+  * @param  sym_tab_t *from - symbol table we want to move
+  * @return sym_tab_item_t - added item
+*/
+sym_tab_t *sym_tab_move(sym_tab_t *from)
 {
-    htab_t *t = htab_init();
+    sym_tab_t *t = sym_tab_init();
 	
 	for (unsigned i = 0; i < from->arr_size; i++)
 	{
-		htab_item_t *tmp = from->element[i];
+		sym_tab_item_t *tmp = from->element[i];
 		while(tmp != NULL)
 		{
-			if (htab_add_item(t, tmp->key) == NULL)
+			if (sym_tab_add_item(t, tmp->key) == NULL)
 				return NULL;
-			htab_find_in_table(t, tmp->key)->key = htab_find_in_table(from, tmp->key)->key;
-			htab_find_in_table(t, tmp->key)->data.params = htab_find_in_table(from, tmp->key)->data.params;
-			htab_find_in_table(t, tmp->key)->data.datatype = htab_find_in_table(from, tmp->key)->data.datatype;
-			htab_find_in_table(t, tmp->key)->data.defined = htab_find_in_table(from, tmp->key)->data.defined;
-			htab_find_in_table(t, tmp->key)->data.item_type = htab_find_in_table(from, tmp->key)->data.item_type;
-			htab_find_in_table(t, tmp->key)->next = htab_find_in_table(from, tmp->key)->next;
+			sym_tab_find_in_table(t, tmp->key)->key = sym_tab_find_in_table(from, tmp->key)->key;
+			sym_tab_find_in_table(t, tmp->key)->data.params = sym_tab_find_in_table(from, tmp->key)->data.params;
+			sym_tab_find_in_table(t, tmp->key)->data.datatype = sym_tab_find_in_table(from, tmp->key)->data.datatype;
+			sym_tab_find_in_table(t, tmp->key)->data.defined = sym_tab_find_in_table(from, tmp->key)->data.defined;
+			sym_tab_find_in_table(t, tmp->key)->data.item_type = sym_tab_find_in_table(from, tmp->key)->data.item_type;
+			sym_tab_find_in_table(t, tmp->key)->next = sym_tab_find_in_table(from, tmp->key)->next;
 
 			tmp = tmp->next;
 		}
 	}
 	
-	htab_clear(from);
+	sym_tab_clear(from);
 	return t;
 }
-//return size of hashtable
-size_t htab_size(const htab_t *t)
+//return size of hassym_table
+size_t sym_tab_size(const sym_tab_t *t)
 {
    return t->size;
 }
-//check if item is FUNC
-bool isfunc(htab_t * t,htab_key_t key)
+/**
+  * @desc find out if item is function
+  * @param  sym_tab_t *t - current symbol table
+  * @param  sym_tab_key_t key - key we want to check
+  * @bool  - true if it's function
+*/
+bool isfunc(sym_tab_t * t,sym_tab_key_t key)
 {
-	if((htab_find_in_table(t,key)->data.item_type )== HT_FUNC)
+	if((sym_tab_find_in_table(t,key)->data.item_type )== HT_FUNC)
 	return true;
 	else
 	return false;
 
 }
-//check if item is VAR
-bool isvar(htab_t * t, htab_key_t key)
+/**
+  * @desc find out if item is a variable
+  * @param  sym_tab_t *t - current symbol table
+  * @param  sym_tab_key_t key - key we want to check
+  * @bool  - true if it's variable
+*/
+bool isvar(sym_tab_t * t, sym_tab_key_t key)
 {
-	if((htab_find_in_table(t,key)->data.item_type )== HT_VAR)
+	if((sym_tab_find_in_table(t,key)->data.item_type )== HT_VAR)
 	return true;
 	else
 	return false;

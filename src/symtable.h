@@ -1,9 +1,8 @@
-// htab.h -- IJC homework 2 2021
+// sym_tab.h -- IJC homework 2 2021
 // License: None (Public domain)
 
-#ifndef __HTAB_H__
-#define __HTAB_H__
-
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
 //This is the optimal value because it creates the largest possible hash table size and limits hashing collisions
 #define MAX 65535
 
@@ -18,7 +17,7 @@ typedef enum{
     HT_VAR,
     HT_FUNC,
     HT_OTHERS
-} htab_item_type;
+} sym_tab_item_type;
 
 // possible data types
 typedef enum {
@@ -26,58 +25,58 @@ INTEGER,
 NUMBER,
 STRING,
 NIL
-}htab_datatype;
+}sym_tab_datatype;
 
 // Hash table structures:
-struct htab;   
-typedef struct htab htab_t;  
+struct sym_tab;   
+typedef struct sym_tab sym_tab_t;  
 
 // DATA types
-typedef const char *htab_key_t;       
-typedef int htab_count_t;   
-typedef bool htab_defined_t;           
+typedef const char *sym_tab_key_t;       
+typedef int sym_tab_count_t;   
+typedef bool sym_tab_defined_t;           
 typedef int num_of_params;
 
 // data of item in table
 typedef struct  {   
-    htab_item_type  item_type; 
-    htab_datatype   datatype;  
-    htab_defined_t  defined;
+    sym_tab_item_type  item_type; 
+    sym_tab_datatype   datatype;  
+    sym_tab_defined_t  defined;
     num_of_params   params;
-} htab_data_t;                
+} sym_tab_data_t;                
 
 //structure of item in table
-typedef struct htab_item_t {  
-htab_key_t          key;
-htab_data_t         data;
-struct htab_item_t *next;
-}htab_item_t;
+typedef struct sym_tab_item_t {  
+sym_tab_key_t          key;
+sym_tab_data_t         data;
+struct sym_tab_item_t *next;
+}sym_tab_item_t;
 
 //structure of table
-struct htab
+struct sym_tab
 {
     size_t size;
     size_t arr_size;
-    struct htab_item_t *element[];
+    struct sym_tab_item_t *element[];
 };
 
 // GLOBAL TABLE OF SYMBOL (main scope)
-htab_t *globalsymtable;
+sym_tab_t *globalsymtable;
 
 // hash function
-size_t htab_hash_function(htab_key_t str);
+size_t sym_tab_hash_function(sym_tab_key_t str);
 
-// functions within hashtable:
-htab_t *htab_init();                                // constuctor of hasthable
-htab_t *htab_move(htab_t *from);                    // move data to new hashtable
-size_t htab_size(const htab_t * t);                 // number of items in hashtable
-htab_item_t * htab_find_in_table(htab_t *t, htab_key_t key); // find item in hashtable
-htab_item_t * htab_add_item(htab_t *t, htab_key_t key);
-bool htab_add_data(htab_item_t *item,htab_item_type item_type,htab_datatype data_type,bool defined,int params); //insert item into table
-bool htab_erase(htab_t * t, htab_key_t key);         // delete item
-void htab_for_each(const htab_t * t, void (*f)(htab_item_t *item)); // make action for every item in hashtable
-void htab_clear(htab_t * t);                        // delete all items
-void htab_free(htab_t * t);                         // destructor of hashtable
-bool isfunc(htab_t *t, htab_key_t key);                        //check if item is function
-bool isvar(htab_t *t,htab_key_t key);                         //check if item is variable
-#endif // __HTAB_H__
+// functions within sym_table:
+sym_tab_t *sym_tab_init();                                // constuctor of hasthable
+sym_tab_t *sym_tab_move(sym_tab_t *from);                    // move data to new hassym_table
+size_t sym_tab_size(const sym_tab_t * t);                 // number of items in hassym_table
+sym_tab_item_t * sym_tab_find_in_table(sym_tab_t *t, sym_tab_key_t key); // find item in hassym_table
+sym_tab_item_t * sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key);
+bool sym_tab_add_data(sym_tab_item_t *item,sym_tab_item_type item_type,sym_tab_datatype data_type,bool defined,int params); //insert item into table
+bool sym_tab_erase(sym_tab_t * t, sym_tab_key_t key);         // delete item
+void sym_tab_for_each(const sym_tab_t * t, void (*f)(sym_tab_item_t *item)); // make action for every item in hassym_table
+void sym_tab_clear(sym_tab_t * t);                        // delete all items
+void sym_tab_free(sym_tab_t * t);                         // destructor of hassym_table
+bool isfunc(sym_tab_t *t, sym_tab_key_t key);                        //check if item is function
+bool isvar(sym_tab_t *t,sym_tab_key_t key);                         //check if item is variable
+#endif // __sym_tab_H__
