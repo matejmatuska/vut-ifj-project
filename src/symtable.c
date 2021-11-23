@@ -1,6 +1,5 @@
 #include "symtable.h"
 #include "error.h"
-
 //hash function djb2 (algorithm by dan bernstein)
 unsigned long htab_hash_function(const char *str)
 {
@@ -14,24 +13,24 @@ unsigned long htab_hash_function(const char *str)
 }
 
 // initialization of table
-htab_t *htab_init(size_t n)
+htab_t *htab_init()
 {
-	htab_t *hashtable = malloc(sizeof(htab_t) + n * sizeof( htab_item_t *));
+	htab_t *hashtable = malloc(sizeof(htab_t) + MAX * sizeof( htab_item_t *));
 	if (hashtable == NULL)
 	{
 		return NULL;
 	}   
 	hashtable->size = 0;
-	hashtable->arr_size = n;
-	for (size_t i = 0; i < n; i++)
+	hashtable->arr_size = MAX;
+	for (size_t i = 0; i < MAX; i++)
 	{
 		hashtable->element[i] = NULL;
 	}
 	return hashtable;
 }
 
-// add new item or update existing one 
-htab_data_t *htab_lookup_add(htab_t *t, htab_key_t key)
+// create new item or update existing one 
+htab_item_t *htab_add_item(htab_t *t, htab_key_t key)
 {
 	unsigned indx = htab_hash_function(key);
 	size_t index = indx % t->arr_size;
@@ -40,18 +39,13 @@ htab_data_t *htab_lookup_add(htab_t *t, htab_key_t key)
 	 htab_item_t *tmp = t->element[index];
 	while (tmp != NULL)
 	{
-		if (!strcmp(tmp->data.key, key))
+		if (!strcmp(tmp->key, key))
 		{
-			tmp->data.count++;
-			htab_data_t *data = &(tmp->data);
-			return data;
+			return tmp;
 		}
 
-		if (tmp->next != NULL)
 			tmp = tmp->next;
 
-		else
-			break;
 	}
 
 	// new item
@@ -59,25 +53,22 @@ htab_data_t *htab_lookup_add(htab_t *t, htab_key_t key)
 
 	if (new == NULL)
 	{
-		fprintf(stderr, "Allocation unsuccessful\n");
 		return NULL;
 	}
 
-	new->data.key = NULL;
-	new->data.key = malloc(sizeof(char) * (strlen(key) + 1));
+	new->key = NULL;
+	new->key = malloc(sizeof(char) * (strlen(key) + 1));
 
-	if (new->data.key == NULL)
+	if (new->key == NULL)
 	{
 		free(new);
 		return NULL;
 	}
 
-	strcpy((char *)new->data.key, key);
-	new->data.count = 1;
+	strcpy((char *)new->key, key);
 	new->data.datatype = NIL;
 	new->data.defined = false;
-	new->data.item_type = HT_NIL;
-	new->data.token_type = TOKEN_TYPE_EOF;
+	new->data.item_type = HT_OTHERS;
 	new->data.params 	= 0;
 	new->next = NULL;
 
@@ -90,13 +81,20 @@ htab_data_t *htab_lookup_add(htab_t *t, htab_key_t key)
 		tmp->next = new;
 
 	t->size++;
-	htab_data_t *newdata = &(new->data);
-	return newdata;
+	return new;
 }
-// size of array
-size_t htab_bucket_count( htab_t *t)
+// add data to item in hashtable
+bool htab_add_data(htab_item_t *item,htab_item_type it,htab_datatype dt,bool def,int par)
 {
-    return t->arr_size;
+	if(!item)
+	{
+		return false;
+	}
+	item->data.item_type = it;
+	item->data.datatype = dt;
+	item->data.defined = def;
+	item->data.params = par;
+	return true;
 }
 
 //delete all items in symtable
@@ -129,7 +127,7 @@ bool htab_erase(htab_t * t, htab_key_t key)
 	while(tmp != NULL)
 	{
 		// first element is a match witch key
-		if (!strcmp(tmp->data.key, key))
+		if (!strcmp(tmp->key, key))
 		{
 			t->element[index] = tmp->next;
 			free(tmp);
@@ -138,7 +136,7 @@ bool htab_erase(htab_t * t, htab_key_t key)
 		}
 		
 		// match with tmp-> next
-		else if (tmp->next != NULL && !strcmp(tmp->next->data.key, key))
+		else if (tmp->next != NULL && !strcmp(tmp->next->key, key))
 		{
 			struct htab_item_t *tmp_next = tmp->next->next;
 			free(tmp->next);
@@ -156,7 +154,7 @@ bool htab_erase(htab_t * t, htab_key_t key)
 	return false;
 }
 // find specific item
-htab_item_t *htab_find(htab_t *t, htab_key_t key)
+htab_item_t *htab_find_in_table(htab_t *t, htab_key_t key)
 {
 	unsigned indx = htab_hash_function(key);
 	size_t index = indx % t->arr_size;
@@ -165,11 +163,9 @@ htab_item_t *htab_find(htab_t *t, htab_key_t key)
 
 	while(item != NULL)
 	{
-		if(strcmp(item->data.key,key) == 0)
+		if(strcmp(item->key,key) == 0)
 		{ 
-			htab_item_t *data =item;
-			data->data = item->data;
-			return data;
+			return item;
 			break;
 		}
 		else
@@ -179,8 +175,10 @@ htab_item_t *htab_find(htab_t *t, htab_key_t key)
 	}
 	return NULL;
 }
+
+
 // make function *f for each item
-void htab_for_each(const htab_t * t, void (*f)(htab_data_t *data))
+void htab_for_each(const htab_t * t, void (*f)(htab_item_t *item))
 {
 	htab_item_t *item ;
 	for(unsigned i = 0; i < t->arr_size; i++)
@@ -188,12 +186,12 @@ void htab_for_each(const htab_t * t, void (*f)(htab_data_t *data))
 		item = t->element[i]; 
 		while(item != NULL)
 		{ 
-			htab_data_t *data = &item->data;
-			(*f)(data);
+			(*f)(item);
 			item = item->next;
 		}
 	}
 }
+
 //free
 void htab_free(htab_t * t)
 {
@@ -203,25 +201,23 @@ void htab_free(htab_t * t)
 
 
 // move one table to another
-htab_t *htab_move(size_t n, htab_t *from)
+htab_t *htab_move(htab_t *from)
 {
-    htab_t *t = htab_init(n);
+    htab_t *t = htab_init();
 	
 	for (unsigned i = 0; i < from->arr_size; i++)
 	{
 		htab_item_t *tmp = from->element[i];
 		while(tmp != NULL)
 		{
-			if (htab_lookup_add(t, tmp->data.key) == NULL)
+			if (htab_add_item(t, tmp->key) == NULL)
 				return NULL;
-
-			htab_find(t, tmp->data.key)->data.key = htab_find(from, tmp->data.key)->data.key;
-			htab_find(t, tmp->data.key)->data.count = htab_find(from, tmp->data.key)->data.count;
-			htab_find(t, tmp->data.key)->data.params = htab_find(from, tmp->data.key)->data.params;
-			htab_find(t, tmp->data.key)->data.token_type = htab_find(from, tmp->data.key)->data.token_type;
-			htab_find(t, tmp->data.key)->data.datatype = htab_find(from, tmp->data.key)->data.datatype;
-			htab_find(t, tmp->data.key)->data.defined = htab_find(from, tmp->data.key)->data.defined;
-			htab_find(t, tmp->data.key)->data.item_type = htab_find(from, tmp->data.key)->data.item_type;
+			htab_find_in_table(t, tmp->key)->key = htab_find_in_table(from, tmp->key)->key;
+			htab_find_in_table(t, tmp->key)->data.params = htab_find_in_table(from, tmp->key)->data.params;
+			htab_find_in_table(t, tmp->key)->data.datatype = htab_find_in_table(from, tmp->key)->data.datatype;
+			htab_find_in_table(t, tmp->key)->data.defined = htab_find_in_table(from, tmp->key)->data.defined;
+			htab_find_in_table(t, tmp->key)->data.item_type = htab_find_in_table(from, tmp->key)->data.item_type;
+			htab_find_in_table(t, tmp->key)->next = htab_find_in_table(from, tmp->key)->next;
 
 			tmp = tmp->next;
 		}
@@ -230,21 +226,24 @@ htab_t *htab_move(size_t n, htab_t *from)
 	htab_clear(from);
 	return t;
 }
+//return size of hashtable
 size_t htab_size(const htab_t *t)
 {
    return t->size;
 }
+//check if item is FUNC
 bool isfunc(htab_t * t,htab_key_t key)
 {
-	if((htab_find(t,key)->data.item_type )== HT_FUNC)
+	if((htab_find_in_table(t,key)->data.item_type )== HT_FUNC)
 	return true;
 	else
 	return false;
 
 }
+//check if item is VAR
 bool isvar(htab_t * t, htab_key_t key)
 {
-	if((htab_find(t,key)->data.item_type )== HT_VAR)
+	if((htab_find_in_table(t,key)->data.item_type )== HT_VAR)
 	return true;
 	else
 	return false;
