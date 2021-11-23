@@ -1,6 +1,9 @@
-CFLAGS= -std=c99 -Wall -Wextra -pedantic
+CFLAGS= -std=c99 -Wall -Wextra -pedantic -g
 
 BIN=proj
+
+.PHONY: all
+all : $(BIN)
 
 .PHONY: run
 run: $(BIN)
