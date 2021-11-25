@@ -2,13 +2,15 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "parser.h"
+#include "expr_parser.h"
+
 #include "scanner.h"
 #include "dynamic_string.h"
-#include "parser.h"
 #include "symtable.h"
 #include "ST_stack.h"
+
 #include "error.h"
-#include "expr_parser.h"
 
 #define TOK_IS_KW(kw) \
 (token->type == TOKEN_TYPE_KW && token->attribute.keyword == (kw))
@@ -17,7 +19,7 @@
 (token->type == TOKEN_TYPE_ID)
 
 #define  TOK_IS_TYPE(kw) \
-(token->type == kw)
+(token->type == (kw))
 
 #define TOK_IS_OP() \
 (token->type == TOKEN_TYPE_MINUS || token->type == TOKEN_TYPE_PLUS || token->type == TOKEN_TYPE_DIV_SIGN || token->type == TOKEN_TYPE_MUL_SIGN )
@@ -35,37 +37,69 @@ ST_stack* scope = NULL;
 
 sym_tab_datatype get_datatype();
 
+int program();
+bool body();
+bool fnc_def();
+bool glob_def();
+bool id_def();
+bool param_list();
+bool next_param();
+bool ret_type_list();
+bool st_list();
+bool st_local();
+bool st_if();
+bool st_while();
+bool st_return();
+bool st_fnc_id();
+bool st_var_id();
+bool option();
+bool expr();
+bool exp_list();
+bool next_exp();
+bool type_list();
+bool next_type();
+bool is_type ();
+bool term_list();
+bool next_term();
+bool is_term();
+bool id_list();
+bool next_id();
+
+int parse()
+{
+    token = malloc(sizeof(token_t));
+
+    int result = program();
+
+    free(token);
+    sym_tab_free(top_table(scope));
+    free(scope);
+    return result;
+}
+
 // <prog> -> require STRING <body> EOF
 int program() {
-    // init token
-    token = malloc(sizeof(token_t));
+
     get_next_token(token);
 
-    // check for require
     if (!TOK_IS_KW(KW_REQUIRE)) {
         return ERROR;
     }
-    // check for "ifj21"
+
     get_next_token(token);
     if (token->type != TOKEN_TYPE_STR
         && !dyn_str_compare(token->attribute.string, "ifj21"))
         return ERROR;
 
-    // check <body> nonterminal
     if (!body())
         return ERROR;
 
-    // check EOF
     get_next_token(token);
     if (token->type != TOKEN_TYPE_EOF) {
         ERROR = SYNTAX_ERR;
     };
 
-    free(token);
-    sym_tab_free(top_table(scope));
-    free(scope);
     return ERROR;
-
 }
 
 bool body() {
@@ -373,8 +407,7 @@ bool st_return(){
 //Can be Macro for better usage
 bool st_fnc_id(){
 
-
-
+    return false;
 }
 
 
@@ -486,6 +519,7 @@ sym_tab_datatype get_datatype(){
     else if (TOK_IS_KW(KW_STRING))
         return STRING;
 
+    return NIL;
 }
 
 bool id_list(){

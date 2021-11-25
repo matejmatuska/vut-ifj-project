@@ -5,12 +5,8 @@
 #include "scanner.h"
 #include "parser.h"
 
+
 int main() {
-
     get_source(stdin);
-
-
-        return program();
-
-
+    return parse();
 }
