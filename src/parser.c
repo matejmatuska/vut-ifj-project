@@ -318,7 +318,6 @@ bool st_local(){
         if(!expr())
             return false;
 //        if(expr(&token, scope, &result)) //TODO
-        get_next_token(token); //Později upravit
     } else
         sym_tab_add_data(item_to_add, HT_VAR, type, false, 0); //Možná úprava?
     return true;
@@ -435,7 +434,6 @@ bool expr() {
         return true;
     }
     return false;
-
 }
 
 bool type_list() {
