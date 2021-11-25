@@ -400,7 +400,8 @@ bool st_while(){
 bool st_return(){
     if(!exp_list())
         return false;
-    get_next_token(token);
+
+    //TODO get_next_token(token);
     return true;
 }
 
@@ -427,17 +428,14 @@ bool st_var_id(){
 }
 
 bool exp_list() {
-    get_next_token(token);
+    // get_next_token(token); if we call this here expr skips one token
     if(!expr())
         return false;
-    if(!next_exp())      //TODO nejspíš se přeskočí token not-tested
-        return false;
-    return true;
 
+    return next_exp();
 }
 
 bool next_exp(){
-    get_next_token(token);
 
     if(TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID || TOK_IS_KW(KW_END))
         return true;
@@ -446,11 +444,7 @@ bool next_exp(){
         ERROR = SYNTAX_ERR;
         return false; }
 
-    get_next_token(token);
-    if(!expr())
-        return false;
-
-    return true;
+    return expr();
 }
 
 bool option(){
