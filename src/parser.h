@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-bool program();
+int program();
 bool body();
 bool fnc_def();
 bool glob_def();

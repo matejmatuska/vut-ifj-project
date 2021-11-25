@@ -5,6 +5,9 @@
 #include "scanner.h"
 #include "dynamic_string.h"
 #include "parser.h"
+#include "symtable.h"
+#include "ST_stack.h"
+#include "error.h"
 
 #define TOK_IS_KW(kw) \
 (token->type == TOKEN_TYPE_KW && token->attribute.keyword == (kw))
@@ -18,41 +21,53 @@
 #define TOK_IS_OP() \
 (token->type == TOKEN_TYPE_MINUS || token->type == TOKEN_TYPE_PLUS || token->type == TOKEN_TYPE_DIV_SIGN || token->type == TOKEN_TYPE_MUL_SIGN )
 
+#define SYM_FIND() \
+(sym_tab_find_in_table(scope->localtable, token->attribute.string->s))
+
+#define ID_NAME() \
+(token->attribute.string->s)
+
+int ERROR = 0;
 token_t *token;
 
+ST_stack* scope = NULL;
 
+sym_tab_datatype get_datatype();
 
 
 // <prog> -> require STRING <body> EOF
-bool program() {
+int program() {
     // init token
     token = malloc(sizeof(token_t));
     get_next_token(token);
 
     // check for require
     if (!TOK_IS_KW(KW_REQUIRE)) {
-        return false;
+        return ERROR;
     }
     // check for "ifj21"
     get_next_token(token);
     if (token->type != TOKEN_TYPE_STR
         && !dyn_str_compare(token->attribute.string, "ifj21"))
-        return false;
+        return ERROR;
 
     // check <body> nonterminal
     if (!body())
-        return false;
+        return ERROR;
 
     // check EOF
     get_next_token(token);
     bool eof_res = token->type == TOKEN_TYPE_EOF;
 
     free(token);
-    return eof_res;
+    sym_tab_free(scope->localtable);
+    free(scope);
+    return ERROR;
 
 }
 
 bool body() {
+    push(&scope);
     if(TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF) || TOK_IS_ID){
 
     } else
@@ -79,9 +94,17 @@ bool fnc_def() {
     get_next_token(token);
     if (!TOK_IS_ID) {
         return false;
+    } else {
+        sym_tab_item_t *item = SYM_FIND();
+        if(item == NULL){
+            item = sym_tab_add_item(scope->localtable, ID_NAME());
+            //todo add item into scope
+        }
     }
+
     get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!param_list()) {
@@ -89,6 +112,7 @@ bool fnc_def() {
     }
 //    get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!ret_type_list()) {
@@ -98,6 +122,7 @@ bool fnc_def() {
         return false;
     }
     if (!TOK_IS_KW(KW_END)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!body())
@@ -108,18 +133,26 @@ bool fnc_def() {
 bool glob_def() {
     get_next_token(token);
     if (!TOK_IS_ID) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
+/*    sym_tab_item_t *item_to_add;
+    item_to_add = sym_tab_add_item(scope->localtable, "f");
+*/
+
     get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     get_next_token(token);
     if (!TOK_IS_KW(KW_FUNCTION)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!type_list()) {
@@ -127,6 +160,7 @@ bool glob_def() {
     }
 //    get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!ret_type_list()) {
@@ -142,6 +176,7 @@ bool glob_def() {
 bool id_def() {
     get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!term_list()) {
@@ -149,6 +184,7 @@ bool id_def() {
     }
     get_next_token(token);
     if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     if (!body())
@@ -162,11 +198,9 @@ bool param_list() {
     if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
         return true;
     }
-    if(!TOK_IS_ID)
-        return false;
+    if(!TOK_IS_ID) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF))
-        return false;
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!is_type())
         return false;
@@ -181,14 +215,14 @@ bool next_param() {
         return true;
     }
     if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
         return false;
     }
     get_next_token(token);
     if(!TOK_IS_ID)
         return false;
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF))
-        return false;
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!is_type())
         return false;
@@ -201,8 +235,7 @@ bool ret_type_list() {
     get_next_token(token);
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) ||TOK_IS_KW(KW_END) ||TOK_IS_TYPE(TOKEN_TYPE_EOF) ||TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
         return true;
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF))
-        return false;
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!is_type())
         return false;
@@ -213,86 +246,87 @@ bool ret_type_list() {
 }
 
 bool st_list() {
-    if (TOK_IS_KW(KW_END) || TOK_IS_KW(KW_ELSE)) {
+   //Vyvoření nového ramce
+   push(&scope);
 
-        return true;
-    }
-   //     get_next_token(token);
-
-
+    while (!TOK_IS_KW(KW_END) && !TOK_IS_KW(KW_ELSE)){
 
 
     if(TOK_IS_KW(KW_IF)) {
         if(!st_if())
             return false;
-        if(st_list())
-            return true;
-        return false;
-
     } else if (TOK_IS_KW(KW_WHILE)) {
         if(!st_while())
             return false;
-        if(st_list())
-            return true;
-        return false;
+
     } else if (TOK_IS_KW(KW_LOCAL)){
         if(!st_local())
             return false;
-        if(st_list())
-            return true;
-        return false;
     } else if (TOK_IS_KW(KW_RETURN)) {
         if(!st_return())
             return false;
-        if(st_list())
-            return true;
-        return false;
     } else if (TOK_IS_ID){
-        //TODO Check if function or variable
-        st_fnc_id();
-        st_var_id();
 
-        if(st_list())
-            return true;
+
+        //TODO ???
+        if(isfunc(scope->localtable, token->attribute.string->s)){
+            st_fnc_id();
+        }
+        else {
+            st_var_id();
+        }
+
+    } else {
+        ERROR = SYNTAX_ERR;
         return false;
     }
-    return false;
 
+    }
+    pop(&scope);
+    return true;
 }
 
 bool st_local(){
     get_next_token(token);
-    if(!TOK_IS_ID)
-        return false;
+    if(!TOK_IS_ID) {ERROR = SYNTAX_ERR; return false; }
+    sym_tab_item_t * item_to_add;
+    item_to_add = sym_tab_add_item(scope->localtable, token->attribute.string->s);
+
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF))
-        return false;
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
+
     get_next_token(token);
     if(!is_type())
         return false;
+
+
+    sym_tab_datatype type = get_datatype();
+
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_EQUAL))
-        return false;
-    if(!option())
-        return false;
+    if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
+        sym_tab_add_data(item_to_add, HT_VAR, type, true, 0);
+
+        if(!expr())
+            return false;
+//        if(expr(&token, scope, &result)) //TODO
+        get_next_token(token); //Později upravit
+    } else
+        sym_tab_add_data(item_to_add, HT_VAR, type, false, 0); //Možná úprava?
     return true;
 }
 
 bool st_if(){
     if(!expr())
         return false;
-    if(!TOK_IS_KW(KW_THEN))
-        return false;
+    if(!TOK_IS_KW(KW_THEN)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!st_list())
         return false;
-    if(!TOK_IS_KW(KW_ELSE))
-        return false;
+    if(!TOK_IS_KW(KW_ELSE)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!st_list())
         return false;
-    if(!TOK_IS_KW(KW_END))
-        return false;
+    if(!TOK_IS_KW(KW_END)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     return true;
 }
@@ -300,13 +334,11 @@ bool st_if(){
 bool st_while(){
     if(!expr())
         return false;
-    if(!TOK_IS_KW(KW_DO))
-        return false;
+    if(!TOK_IS_KW(KW_DO)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     if(!st_list())
         return false;
-    if(!TOK_IS_KW(KW_END))
-        return false;
+    if(!TOK_IS_KW(KW_END)) {ERROR = SYNTAX_ERR; return false; }
     get_next_token(token);
     return true;
 }
@@ -318,13 +350,29 @@ bool st_return(){
     return true;
 }
 
-//Can be Macro for better usage. Checks if given ID is id of variable or function
+//Can be Macro for better usage
 bool st_fnc_id(){
+
+
 
 }
 
+
 bool st_var_id(){
 
+    //TODO Možná lepší v id_list/next_id?
+    while (sym_tab_find_in_table(scope->localtable, token->attribute.string->s) != NULL) {
+        get_next_token(token);
+        if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
+            //Poslat další token nebo to nechat na parseru?
+            if(expr())
+                return true;
+            return false;
+        }
+
+    }
+
+    return false;
 }
 
 bool exp_list() {
@@ -343,8 +391,10 @@ bool next_exp(){
     if(TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID || TOK_IS_KW(KW_END))
         return true;
 
-    if(!TOK_IS_TYPE(TOKEN_TYPE_COLON))
-        return false;
+    if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
+        return false; }
+
     get_next_token(token);
     if(!expr())
         return false;
@@ -368,7 +418,7 @@ bool option(){
  *  Notes: Works separatedly from main rules, must be called by author
  */
 bool expr(token_t prevTok) {
-    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
+/*    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
     get_next_token(token);
     if (TOK_IS_TYPE(TOKEN_TYPE_INT) && prevTok.type == TOKEN_TYPE_INT ) {
 
@@ -379,12 +429,12 @@ bool expr(token_t prevTok) {
     } else if (TOK_IS_TYPE(TOKEN_TYPE_MINUS) && (prevTok.type == TOKEN_TYPE_INT || prevTok.type == TOKEN_TYPE_DOUBLE)) {
 
     } else return false;
-    get_next_token(token);
+
     if(!TOK_IS_OP()) {
 
     }
-    expr(prevTok);
-
+    expr(prevTok); */
+    get_next_token(token);
     return true;
 }
 
@@ -405,6 +455,7 @@ bool next_type(){
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) ||TOK_IS_KW(KW_END) ||TOK_IS_TYPE(TOKEN_TYPE_EOF) ||TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
         return true;
     if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)){
+        ERROR = SYNTAX_ERR;
         return false;
     }
     get_next_token(token);
@@ -417,7 +468,17 @@ bool next_type(){
 bool is_type (){
     if(TOK_IS_KW(KW_INTEGER) || TOK_IS_KW(KW_NUMBER) || TOK_IS_KW(KW_STRING))
         return true;
+    ERROR = SYNTAX_ERR;
     return false;
+}
+
+sym_tab_datatype get_datatype(){
+    if (TOK_IS_KW(KW_INTEGER))
+        return INTEGER;
+    else if (TOK_IS_KW(KW_NUMBER))
+        return NUMBER;
+    else if (TOK_IS_KW(KW_STRING))
+        return STRING;
 }
 
 bool id_list(){
@@ -429,12 +490,14 @@ bool next_id(){
     get_next_token(token);
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL))
         return true;
-    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON))
+    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
         return false;
-
+    }
+    next_id();
     return true;
 }
-
+//TODO překopat na zjišťování správných parametrů
 bool term_list() {
     get_next_token(token);
     if(!is_term()){
@@ -448,8 +511,10 @@ bool term_list() {
 
 bool next_term() {
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_COLON))
+    if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
         return false;
+    }
     get_next_token(token);
     if(!is_term()){
         return false;
@@ -464,5 +529,6 @@ bool is_term() {
     if (TOK_IS_TYPE(TOKEN_TYPE_STR) || TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) || TOK_IS_KW(KW_NIL) || TOK_IS_ID){
         return true;
     }
+    ERROR = SYNTAX_ERR;
     return false;
 }

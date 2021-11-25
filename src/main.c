@@ -9,8 +9,8 @@ int main() {
 
     get_source(stdin);
 
-    if (!program())
-        return EXIT_FAILURE;
 
-    return EXIT_SUCCESS;
+        return program();
+
+
 }
