@@ -1,3 +1,9 @@
+/*
+ * projekt
+ */
+
+
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -8,6 +14,7 @@
 #include "symtable.h"
 #include "ST_stack.h"
 #include "error.h"
+#include "expr_parser.h"
 
 #define TOK_IS_KW(kw) \
 (token->type == TOKEN_TYPE_KW && token->attribute.keyword == (kw))
@@ -57,7 +64,9 @@ int program() {
 
     // check EOF
     get_next_token(token);
-    bool eof_res = token->type == TOKEN_TYPE_EOF;
+    if (token->type != TOKEN_TYPE_EOF) {
+        ERROR = SYNTAX_ERR;
+    };
 
     free(token);
     sym_tab_free(scope->localtable);
@@ -417,25 +426,16 @@ bool option(){
  *         false if there is mistake
  *  Notes: Works separatedly from main rules, must be called by author
  */
-bool expr(token_t prevTok) {
-/*    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
+bool expr() {
+   //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
+
     get_next_token(token);
-    if (TOK_IS_TYPE(TOKEN_TYPE_INT) && prevTok.type == TOKEN_TYPE_INT ) {
-
-    } else if (TOK_IS_TYPE(TOKEN_TYPE_STR) && prevTok.type == TOKEN_TYPE_STR ) {
-
-    } else if (TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) && prevTok.type == TOKEN_TYPE_DOUBLE ) {
-
-    } else if (TOK_IS_TYPE(TOKEN_TYPE_MINUS) && (prevTok.type == TOKEN_TYPE_INT || prevTok.type == TOKEN_TYPE_DOUBLE)) {
-
-    } else return false;
-
-    if(!TOK_IS_OP()) {
-
+    ERROR = parse_expr(token);
+    if (ERROR == 0) {
+        return true;
     }
-    expr(prevTok); */
-    get_next_token(token);
-    return true;
+    return false;
+
 }
 
 bool type_list() {
@@ -461,7 +461,7 @@ bool next_type(){
     get_next_token(token);
     if(!is_type())
         return false;
-    next_type();
+   return next_type();
 
 }
 
@@ -479,11 +479,13 @@ sym_tab_datatype get_datatype(){
         return NUMBER;
     else if (TOK_IS_KW(KW_STRING))
         return STRING;
+
 }
 
 bool id_list(){
    if(!next_id())
        return false;
+    return true;
 }
 
 bool next_id(){
