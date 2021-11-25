@@ -1,9 +1,3 @@
-/*
- * projekt
- */
-
-
-
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -29,7 +23,7 @@
 (token->type == TOKEN_TYPE_MINUS || token->type == TOKEN_TYPE_PLUS || token->type == TOKEN_TYPE_DIV_SIGN || token->type == TOKEN_TYPE_MUL_SIGN )
 
 #define SYM_FIND() \
-(sym_tab_find_in_table(scope->localtable, token->attribute.string->s))
+(sym_tab_find_in_table(top_table(scope), token->attribute.string->s))
 
 #define ID_NAME() \
 (token->attribute.string->s)
@@ -69,7 +63,7 @@ int program() {
     };
 
     free(token);
-    sym_tab_free(scope->localtable);
+    sym_tab_free(top_table(scope));
     free(scope);
     return ERROR;
 
@@ -106,7 +100,7 @@ bool fnc_def() {
     } else {
         sym_tab_item_t *item = SYM_FIND();
         if(item == NULL){
-            item = sym_tab_add_item(scope->localtable, ID_NAME());
+            item = sym_tab_add_item(top_table(scope), ID_NAME());
             //todo add item into scope
         }
     }
@@ -146,7 +140,7 @@ bool glob_def() {
         return false;
     }
 /*    sym_tab_item_t *item_to_add;
-    item_to_add = sym_tab_add_item(scope->localtable, "f");
+    item_to_add = sym_tab_add_item(top_table(scope), "f");
 */
 
     get_next_token(token);
@@ -278,7 +272,7 @@ bool st_list() {
 
 
         //TODO ???
-        if(isfunc(scope->localtable, token->attribute.string->s)){
+        if(isfunc(top_table(scope), token->attribute.string->s)){
             st_fnc_id();
         }
         else {
@@ -299,7 +293,7 @@ bool st_local(){
     get_next_token(token);
     if(!TOK_IS_ID) {ERROR = SYNTAX_ERR; return false; }
     sym_tab_item_t * item_to_add;
-    item_to_add = sym_tab_add_item(scope->localtable, token->attribute.string->s);
+    item_to_add = sym_tab_add_item(top_table(scope), token->attribute.string->s);
 
     get_next_token(token);
     if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
@@ -369,7 +363,7 @@ bool st_fnc_id(){
 bool st_var_id(){
 
     //TODO Možná lepší v id_list/next_id?
-    while (sym_tab_find_in_table(scope->localtable, token->attribute.string->s) != NULL) {
+    while (sym_tab_find_in_table(top_table(scope), token->attribute.string->s) != NULL) {
         get_next_token(token);
         if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
             //Poslat další token nebo to nechat na parseru?
@@ -406,8 +400,6 @@ bool next_exp(){
     get_next_token(token);
     if(!expr())
         return false;
-
-
 
     return true;
 }
@@ -494,8 +486,7 @@ bool next_id(){
         ERROR = SYNTAX_ERR;
         return false;
     }
-    next_id();
-    return true;
+    return next_id();
 }
 //TODO překopat na zjišťování správných parametrů
 bool term_list() {
