@@ -19,10 +19,18 @@ bool dyn_str_init(dynamic_string_t *str)
     }
 }
 
-bool dyn_str_add_character(dynamic_string_t *str, char x)
+bool dyn_str_add_character(dynamic_string_t* str, char x)
 {
     str->s[str->size] = x;
-    str->size++;
+    (str->size)++;
+    char* tmp = str->s;
+    tmp = (char*)realloc(str->s, (str->size + 1) * sizeof(char));
+    if (tmp == NULL)
+    {
+        fprintf(stderr, "Allocation error\n");
+        return false;
+    }
+    str->s = tmp;
     str->s[str->size] = '\0';
     return true;
 }
@@ -67,7 +75,7 @@ void dyn_str_copy(dynamic_string_t *str1, dynamic_string_t *str2)
 {
     for (size_t i = 0; i < str2->size; i++)
     {
-        dyn_str_add_character(str1, str2->s[i]);
+        dyn_str_add_character(str1, (str2->s)[i]);
     }
     dyn_str_free(str2);
 }
