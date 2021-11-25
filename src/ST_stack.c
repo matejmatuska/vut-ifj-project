@@ -19,7 +19,7 @@ sym_tab_t *top_table(ST_stack *scope)
   * @param  ST_stack **scope - current scope's visibility
   * @return nothing
 */
-void push(struct ST_stack **scope)
+bool push(struct ST_stack **scope)
 {
     ST_stack *new = NULL;
     sym_tab_t *table = sym_tab_init();
@@ -27,7 +27,7 @@ void push(struct ST_stack **scope)
     // check for possible stack overflow
     if (!new)
     {
-        exit(1);
+        return false;
     }
     
     if(!*scope)
@@ -35,6 +35,7 @@ void push(struct ST_stack **scope)
     new->next = *scope;
     new->localtable = table;
     *scope = new;
+    return true;
 }
 
 /**
@@ -42,17 +43,18 @@ void push(struct ST_stack **scope)
   * @param  ST_stack *scope - current scope's visibility
   * @return nothing
 */
-void pop(ST_stack **scope)
+bool pop(ST_stack **scope)
 {
     ST_stack *tmp;
     if (*scope == NULL)
     {
-        exit(1);
+        return false;
     }
     tmp = *scope;
     *scope = (*scope)->next;
     sym_tab_free(tmp->localtable);
     free(tmp);
+    return true;
 }
 /**
   * @desc search for item everywhere (local -> global)
