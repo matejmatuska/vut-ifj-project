@@ -35,7 +35,6 @@ ST_stack* scope = NULL;
 
 sym_tab_datatype get_datatype();
 
-
 // <prog> -> require STRING <body> EOF
 int program() {
     // init token
@@ -76,17 +75,11 @@ bool body() {
     } else
         get_next_token(token);
     if (TOK_IS_KW(KW_GLOBAL)) {
-        if (glob_def())
-            return true;
-        return false;
+        return glob_def();
     } else if (TOK_IS_KW(KW_FUNCTION)) {
-        if (fnc_def())
-            return true;
-        return false;
+        return fnc_def();
     } else if (token->type == TOKEN_TYPE_ID) {
-        if (id_def())
-            return true;
-        return false;
+        return id_def();
     } else if (token->type == TOKEN_TYPE_EOF) {
         return true;
     }
@@ -234,61 +227,77 @@ bool next_param() {
     return false;
 }
 
+
+/**
+ * <ret-type-list> -> : <type> <next-type>
+ */
 bool ret_type_list() {
     get_next_token(token);
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) ||TOK_IS_KW(KW_END) ||TOK_IS_TYPE(TOKEN_TYPE_EOF) ||TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
         return true;
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
+
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) { 
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+
     get_next_token(token);
     if(!is_type())
         return false;
+
     if(next_type())
         return true;
+
     return false;
 
 }
 
+/**
+ * <st-list> -> <statement> <st-list>
+ */
 bool st_list() {
    //Vyvoření nového ramce
    push(&scope);
 
     while (!TOK_IS_KW(KW_END) && !TOK_IS_KW(KW_ELSE)){
 
+        if(TOK_IS_KW(KW_IF)) {
+            if(!st_if())
+                return false;
+        } else if (TOK_IS_KW(KW_WHILE)) {
+            if(!st_while())
+                return false;
 
-    if(TOK_IS_KW(KW_IF)) {
-        if(!st_if())
-            return false;
-    } else if (TOK_IS_KW(KW_WHILE)) {
-        if(!st_while())
-            return false;
-
-    } else if (TOK_IS_KW(KW_LOCAL)){
-        if(!st_local())
-            return false;
-    } else if (TOK_IS_KW(KW_RETURN)) {
-        if(!st_return())
-            return false;
-    } else if (TOK_IS_ID){
+        } else if (TOK_IS_KW(KW_LOCAL)){
+            if(!st_local())
+                return false;
+        } else if (TOK_IS_KW(KW_RETURN)) {
+            if(!st_return())
+                return false;
+        } else if (TOK_IS_ID) {
 
 
-        //TODO ???
-        if(isfunc(top_table(scope), token->attribute.string->s)){
-            st_fnc_id();
+            //TODO ???
+            if(isfunc(top_table(scope), token->attribute.string->s)){
+                st_fnc_id();
+            }
+            else {
+                st_var_id();
+            }
+
+        } else {
+            ERROR = SYNTAX_ERR;
+            return false;
         }
-        else {
-            st_var_id();
-        }
-
-    } else {
-        ERROR = SYNTAX_ERR;
-        return false;
-    }
 
     }
     pop(&scope);
     return true;
 }
 
+/**
+ * <statement> -> local id : <type> = <option> P = local
+ */
 bool st_local(){
     get_next_token(token);
     if(!TOK_IS_ID) {ERROR = SYNTAX_ERR; return false; }
@@ -296,7 +305,10 @@ bool st_local(){
     item_to_add = sym_tab_add_item(top_table(scope), token->attribute.string->s);
 
     get_next_token(token);
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
 
     get_next_token(token);
     if(!is_type())
@@ -317,6 +329,9 @@ bool st_local(){
     return true;
 }
 
+/**
+ * <statement> -> if <expr> then <st-list> else <st-list> end
+ */
 bool st_if(){
     if(!expr())
         return false;
@@ -333,6 +348,9 @@ bool st_if(){
     return true;
 }
 
+/**
+ * <statement> -> while <expr> do <st-list> end
+ */
 bool st_while(){
     if(!expr())
         return false;
@@ -361,7 +379,6 @@ bool st_fnc_id(){
 
 
 bool st_var_id(){
-
     //TODO Možná lepší v id_list/next_id?
     while (sym_tab_find_in_table(top_table(scope), token->attribute.string->s) != NULL) {
         get_next_token(token);
@@ -373,7 +390,6 @@ bool st_var_id(){
         }
 
     }
-
     return false;
 }
 
