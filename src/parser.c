@@ -444,7 +444,8 @@ bool exp_list() {
 
 bool next_exp(){
 
-    if(TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID || TOK_IS_KW(KW_END))
+    //TODO added else to next_exp predict, is it ok?
+    if(TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_ELSE) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID || TOK_IS_KW(KW_END))
         return true;
 
     if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
