@@ -122,6 +122,9 @@ static ops_t get_operation(symbol_type_t top_terminal, symbol_type_t current_sym
 }
 
 /**
+ * Matches a sequence of symbols to a rule
+ *
+ * @note The derivation is reversed so the symbols are expected in the reverse order
  * @param count number of symbols to match rule to
  * @param symbols linked list containing count symbols
  * @param rule destination to save rule to
@@ -145,7 +148,7 @@ static int match_rule(int count, symbol_t *symbols, rule_t *rule)
             return NO_MATCH;
 
         case 2:
-            if (s1->type == LEN && s2->type == NON_TERMINAL)
+            if (s1->type == NON_TERMINAL && s2->type == LEN)
                 return LEN_E;
 
             return NO_MATCH;
