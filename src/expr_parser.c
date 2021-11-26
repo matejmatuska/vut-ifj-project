@@ -106,6 +106,7 @@ static int get_lookup_index(symbol_type_t type)
         case INT_LIT:
         case NUM_LIT:
         case STR_LIT:
+        case NIL:
             return S_VAL;
 
         case DOLLAR:
@@ -141,7 +142,8 @@ static int match_rule(int count, symbol_t *symbols, rule_t *rule)
     {
         case 1:
             if (s1->type == ID || s1->type == STR_LIT
-                    || s1->type == INT_LIT || s1->type == NUM_LIT)
+                    || s1->type == INT_LIT || s1->type == NUM_LIT
+                    || s1->type == NIL)
             {
                 return VAL_TO_E; // E -> i
             }
@@ -248,6 +250,10 @@ symbol_type_t token_to_symbol(token_t token)
             return STR_LIT;
         case TOKEN_TYPE_DOUBLE:
             return NUM_LIT;
+        case TOKEN_TYPE_KW:
+            if (token.attribute.keyword == KW_NIL)
+                return NIL;
+            return DOLLAR;
 
         default:
             return DOLLAR;

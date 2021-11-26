@@ -29,6 +29,7 @@ typedef enum {
     INT_LIT, // integer literal
     NUM_LIT, // number literal
     STR_LIT, // string literal
+    NIL, // nil
     DOLLAR, // "$"
     HANDLE, // handle
     NON_TERMINAL // any non terminal symbol
