@@ -80,13 +80,30 @@ void dyn_str_copy(dynamic_string_t *str1, dynamic_string_t *str2)
     dyn_str_free(str2);
 }
 
-void dyn_str_clear(dynamic_string_t *str)
+void dyn_str_clear(dynamic_string_t* str)
 {
+    if (str == NULL)
+        return;
+
     str->size = 0;
     str->s[str->size] = 0;
+    if (str->s != NULL)
+    {
+        free(str->s);
+        str->s = NULL;
+    }
 }
 
 void dyn_str_free(dynamic_string_t *str)
 {
-    free(str->s);
+    if (str == NULL) 
+        return;
+
+    if (str->s != NULL)
+    {
+        free(str->s);
+        str->s = NULL;
+    }
+    
+    free(str);
 }

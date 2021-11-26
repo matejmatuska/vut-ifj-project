@@ -54,11 +54,10 @@ bool success = false;
 #define DOT_STATE 339           //F
 #define DOUBLE_DOT_STATE 340     //F
 
-int error(Error type, dynamic_string_t *value)
-{
-    dyn_str_free(value);
+#define error(type, value) \
+    dyn_str_free(value);\
     return type;
-}
+
 
 //set source file
 void get_source(FILE *file)
@@ -105,8 +104,10 @@ int make_string(token_t *token, dynamic_string_t *value)
                 memcpy(substring, &(value->s)[i + 1], 3);
                 substring[3] = '\0';
                 int ascii = atoi(substring);
-                if(ascii<0 || ascii>255)
-                error(LEX_ERR,value);
+                if (ascii < 0 || ascii>255)
+                {
+                    error(LEX_ERR, value)
+                }
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
@@ -234,16 +235,17 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
 }
 
 //main function , switch
-int get_next_token(token_t *current_token)
+int get_next_token(token_t* current_token)
 {
 
     //checking file
     if (source == NULL)
         return INTERNAL_ERR;
 
-    //checking dynamic string
-    static dynamic_string_t str;
-    static dynamic_string_t *value = &str;
+    dynamic_string_t* value = NULL;
+
+    //static dynamic_string_t str;
+    //static dynamic_string_t *value = &str;
     
     char c;
     // initial state
@@ -267,9 +269,17 @@ int get_next_token(token_t *current_token)
                 state = START_STATE;
             else if (c == '"')
             {
-                if (!dyn_str_init(value))
-                    error(LEX_ERR, value);
                 state = START_OF_STRING_STATE;
+                value = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+                if (value == NULL)
+                {
+                    fprintf(stderr, "Allocation error\n");
+                    return 0;
+                }
+                if (!dyn_str_init(value))
+                {
+                    error(LEX_ERR, value)
+                }
             }
             else if (c == '+')
                 state = PLUS_STATE;
@@ -296,19 +306,39 @@ int get_next_token(token_t *current_token)
             else if ((('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z')) || (c == '_'))
             {
                 state = ID_STATE;
+                value = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+                if (value == NULL)
+                {
+                    fprintf(stderr, "Allocation error\n");
+                    return 0;
+                }
                 if (!dyn_str_init(value))
-                    error(LEX_ERR, value);
+                {
+                    error(LEX_ERR, value)
+                }
+
                 dyn_str_add_character(value, c);
             }
             else if (('0' <= c) && (c <= '9'))
             {
                 state = INT_STATE;
+                value = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+                if (value == NULL)
+                {
+                    fprintf(stderr, "Allocation error\n");
+                    return 0;
+                }
                 if (!dyn_str_init(value))
-                    error(LEX_ERR, value);
+                {
+                    error(LEX_ERR, value)
+                }
+
                 dyn_str_add_character(value, c);
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case MINUS_STATE:
@@ -416,7 +446,7 @@ int get_next_token(token_t *current_token)
             }
             else
             {
-                error(LEX_ERR, value);
+                error(LEX_ERR, value)
                 return 0;
             }
             break;
@@ -452,7 +482,9 @@ int get_next_token(token_t *current_token)
                 state = START_OF_SIGN_EXP_STATE;
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case START_OF_SIGN_EXP_STATE:
@@ -462,7 +494,9 @@ int get_next_token(token_t *current_token)
                 state = EXP_W_SIGN_STATE;
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case EXP_STATE:
@@ -504,7 +538,9 @@ int get_next_token(token_t *current_token)
                 state = START_OF_ESCAPE_SEQ_STATE;
             }
             else if (c < 31)
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             else
             {
                 dyn_str_add_character(value, c);
@@ -524,7 +560,9 @@ int get_next_token(token_t *current_token)
                 state = ASCII_SECOND_VALUE_STATE;
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case ASCII_SECOND_VALUE_STATE:
@@ -534,7 +572,7 @@ int get_next_token(token_t *current_token)
                 state = ASCII_THIRD_VALUE_STATE;
             }
             else
-                error(LEX_ERR, value);
+                error(LEX_ERR, value)
             break;
 
         case ASCII_THIRD_VALUE_STATE:
@@ -575,7 +613,9 @@ int get_next_token(token_t *current_token)
             if (c == '=')
                 state = COMPARING_2_STATE;
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case LESS_STATE:
@@ -681,7 +721,9 @@ int get_next_token(token_t *current_token)
                 state = DOUBLE_DOT_STATE;              
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case DOUBLE_DOT_STATE:
