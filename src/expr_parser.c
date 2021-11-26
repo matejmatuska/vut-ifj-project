@@ -292,7 +292,8 @@ int analyze(token_t *token, symbol_stack_t *stack)
                 if (!symbol_stack_push(stack, current_sym))
                     return INTERNAL_ERR;
                 else
-                    get_next_token(token);
+                    if(get_next_token(token) == LEX_ERR)
+                        return LEX_ERR;
                 break;
 
             case H: // shift with handle
@@ -302,7 +303,9 @@ int analyze(token_t *token, symbol_stack_t *stack)
                 if (!symbol_stack_push(stack, current_sym))
                     return INTERNAL_ERR;
 
-                get_next_token(token);
+                if(get_next_token(token) == LEX_ERR)
+                    return LEX_ERR;
+
                 break;
 
             case R: // reduce
