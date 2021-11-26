@@ -18,8 +18,8 @@
 #define TOK_IS_ID \
     (token->type == TOKEN_TYPE_ID)
 
-#define  TOK_IS_TYPE(kw) \
-    (token->type == (kw))
+#define  TOK_IS_TYPE(_type) \
+    (token->type == (_type))
 
 #define TOK_IS_OP() \
     (token->type == TOKEN_TYPE_MINUS || token->type == TOKEN_TYPE_PLUS || token->type == TOKEN_TYPE_DIV_SIGN || token->type == TOKEN_TYPE_MUL_SIGN )
@@ -77,7 +77,11 @@ int parse()
     int result = program();
 
     free(token);
-    sym_tab_free(top_table(scope));
+
+    sym_tab_t *tab = top_table(scope);
+    if (tab)
+        sym_tab_free(tab);
+
     free(scope);
     return result;
 }
@@ -88,13 +92,16 @@ int program() {
     GET_NEXT_TOKEN();
 
     if (!TOK_IS_KW(KW_REQUIRE)) {
+        ERROR = SYNTAX_ERR;
         return ERROR;
     }
 
     GET_NEXT_TOKEN();
-    if (token->type != TOKEN_TYPE_STR
-        && !dyn_str_compare(token->attribute.string, "ifj21"))
+    if (TOK_IS_TYPE(TOKEN_TYPE_STR)
+        && !dyn_str_compare(token->attribute.string, "ifj21")) {
+        ERROR = SYNTAX_ERR;
         return ERROR;
+    }
 
     if (!body())
         return ERROR;
@@ -302,7 +309,7 @@ bool st_list() {
 
     while (!TOK_IS_KW(KW_END) && !TOK_IS_KW(KW_ELSE)){
 
-        if(TOK_IS_KW(KW_IF)) {
+        if (TOK_IS_KW(KW_IF)) {
             if(!st_if())
                 return false;
         } else if (TOK_IS_KW(KW_WHILE)) {
@@ -318,12 +325,18 @@ bool st_list() {
         } else if (TOK_IS_ID) {
 
 
-            //TODO ???
+            //TODO
             if(isfunc(top_table(scope), token->attribute.string->s)){
-                st_fnc_id();
+                if (!st_fnc_id()) {
+                    ERROR = SYNTAX_ERR;
+                    return false;
+                }
             }
             else {
-                st_var_id();
+                if (!st_var_id()) {
+                    ERROR = SYNTAX_ERR;
+                    return false;
+                }
             }
 
         } else {
@@ -341,7 +354,10 @@ bool st_list() {
  */
 bool st_local(){
     GET_NEXT_TOKEN();
-    if(!TOK_IS_ID) {ERROR = SYNTAX_ERR; return false; }
+    if (!TOK_IS_ID) { 
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
     sym_tab_item_t * item_to_add;
     //item_to_add = sym_tab_add_item(top_table(scope), token->attribute.string->s);
 
@@ -358,12 +374,12 @@ bool st_local(){
     sym_tab_datatype type = get_datatype();
 
     GET_NEXT_TOKEN();
-    if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
+    if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
         //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
 
         if(!expr())
             return false;
-//        if(expr(&token, scope, &result)) //TODO
+        //        if(expr(&token, scope, &result)) //TODO
     } else {
         //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
     }
@@ -374,17 +390,17 @@ bool st_local(){
  * <statement> -> if <expr> then <st-list> else <st-list> end
  */
 bool st_if(){
-    if(!expr())
+    if (!expr())
         return false;
-    if(!TOK_IS_KW(KW_THEN)) {ERROR = SYNTAX_ERR; return false; }
+    if (!TOK_IS_KW(KW_THEN)) { ERROR = SYNTAX_ERR; return false; }
     GET_NEXT_TOKEN();
-    if(!st_list())
+    if (!st_list())
         return false;
-    if(!TOK_IS_KW(KW_ELSE)) {ERROR = SYNTAX_ERR; return false; }
+    if (!TOK_IS_KW(KW_ELSE)) { ERROR = SYNTAX_ERR; return false; }
     GET_NEXT_TOKEN();
-    if(!st_list())
+    if (!st_list())
         return false;
-    if(!TOK_IS_KW(KW_END)) {ERROR = SYNTAX_ERR; return false; }
+    if (!TOK_IS_KW(KW_END)) { ERROR = SYNTAX_ERR; return false; }
     GET_NEXT_TOKEN();
     return true;
 }
@@ -425,9 +441,7 @@ bool st_var_id(){
         GET_NEXT_TOKEN();
         if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
             //Poslat další token nebo to nechat na parseru?
-            if(expr())
-                return true;
-            return false;
+            return expr();
         }
 
     }
@@ -450,7 +464,8 @@ bool next_exp(){
 
     if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
         ERROR = SYNTAX_ERR;
-        return false; }
+        return false;
+    }
 
     return expr();
 }
@@ -524,10 +539,9 @@ sym_tab_datatype get_datatype(){
     return NIL;
 }
 
+// first id is check at call site
 bool id_list(){
-   if(!next_id())
-       return false;
-    return true;
+   return next_id();
 }
 
 bool next_id(){
