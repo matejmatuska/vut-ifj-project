@@ -73,7 +73,7 @@ int make_number(token_t *token, dynamic_string_t *value)
     else
         token->attribute.double_value = atof(value->s);
 
-    dyn_str_clear(value);
+    dyn_str_free(value);
     return 0;
 }
 
@@ -114,11 +114,14 @@ int make_string(token_t *token, dynamic_string_t *value)
             }
         }
     }
+    /*
         dynamic_string_t str1;
         dynamic_string_t * str2 = &str1;
         dyn_str_init(str2);
         dyn_str_copy(str2,value);
-        token->attribute.string = str2;
+        */
+        token->attribute.string = value;
+        
     return 0;
 }
 int make_id_or_kw(token_t *token, dynamic_string_t *value)
@@ -128,101 +131,105 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_DO;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "else"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_ELSE;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "end"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_END;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "function"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_FUNCTION;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "global"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_GLOBAL;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "if"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_IF;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "integer"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_INTEGER;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "number"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_NUMBER;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "string"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_STRING;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "local"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_LOCAL;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "nil"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_NIL;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "require"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_REQUIRE;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "return"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_RETURN;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "then"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_THEN;
-        return 0;
+        
     }
     else if (dyn_str_compare(value, "while"))
     {
         token->type = TOKEN_TYPE_KW;
         token->attribute.keyword = KW_WHILE;
-        return 0;
+        
     }
     else
     {
+        /*
         dynamic_string_t str1;
         dynamic_string_t * str2 = &str1;
         dyn_str_init(str2);
         dyn_str_copy(str2,value);
-        token->attribute.string = str2;
+          */
+        token->attribute.string = value;
+        return 0;
     }
     //dyn_str_clear(value);
+    dyn_str_free(value);
     return 0;
 }
 
@@ -235,12 +242,9 @@ int get_next_token(token_t *current_token)
         return INTERNAL_ERR;
 
     //checking dynamic string
-    dynamic_string_t str;
-    dynamic_string_t *value = &str;
-
-    if (!dyn_str_init(value))
-        error(LEX_ERR, value);
- 
+    static dynamic_string_t str;
+    static dynamic_string_t *value = &str;
+    
     char c;
     // initial state
     int state = 300;
@@ -262,7 +266,11 @@ int get_next_token(token_t *current_token)
             else if (isspace(c))
                 state = START_STATE;
             else if (c == '"')
+            {
+                if (!dyn_str_init(value))
+                    error(LEX_ERR, value);
                 state = START_OF_STRING_STATE;
+            }
             else if (c == '+')
                 state = PLUS_STATE;
             else if (c == '*')
@@ -288,11 +296,15 @@ int get_next_token(token_t *current_token)
             else if ((('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z')) || (c == '_'))
             {
                 state = ID_STATE;
+                if (!dyn_str_init(value))
+                    error(LEX_ERR, value);
                 dyn_str_add_character(value, c);
             }
             else if (('0' <= c) && (c <= '9'))
             {
                 state = INT_STATE;
+                if (!dyn_str_init(value))
+                    error(LEX_ERR, value);
                 dyn_str_add_character(value, c);
             }
             else
@@ -403,7 +415,10 @@ int get_next_token(token_t *current_token)
                 state = DOUBLE_STATE;
             }
             else
+            {
                 error(LEX_ERR, value);
+                return 0;
+            }
             break;
 
         case DOUBLE_STATE:

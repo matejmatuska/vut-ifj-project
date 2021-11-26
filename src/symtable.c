@@ -16,6 +16,54 @@ unsigned long sym_tab_hash_function(const char *str)
         return hash;
 }
 
+//add first value to linked list 
+data_type create_data_type(sym_tab_datatype first){
+    data_type new; 
+    new = (data_type)malloc(sizeof( struct datatypes_list)); 
+    new->datatype = first;
+    new->next = NULL;
+    return new;
+}
+
+void delete_data_types(data_type first)
+{
+data_type p;
+p = first;
+while(p != NULL){
+	data_type ptr;
+	ptr = p;
+	while(p != NULL)
+	{
+		p = p->next;
+		free(ptr);
+		ptr = p;
+	}  
+    }
+}
+
+    
+
+// add values to linked list
+data_type add_data_type(data_type first, sym_tab_datatype value){
+    data_type new,p;
+    new = (data_type)malloc(sizeof( struct datatypes_list)); 
+    new->next = NULL;
+    new->datatype = value;
+    if(first == NULL){
+        first = new;     
+    }
+    else{
+        p  = first;
+        while(p->next != NULL){
+            p = p->next;
+        }
+        p->next = new;
+    }
+    return first;
+}
+
+
+
 /**
   * @desc initialization of symbol table
   * @return sym_tab_t * - initialized symbol table
@@ -78,12 +126,8 @@ sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key)
 		return NULL;
 	}
 
+
 	strcpy((char *)new->key, key);
-	new->data.datatype = NIL;
-	new->data.defined = false;
-	new->data.item_type = HT_OTHERS;
-	new->data.params 	= 0;
-	new->next = NULL;
 
 	// add element at the beginning if the array was empty
 	if (t->element[index] == NULL)
@@ -97,27 +141,55 @@ sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key)
 	return new;
 }
 /**
-  * @desc add data to item in symbol table
+  * @desc add data to FUNCTION
   * @param sym_tab_item_t *item - specific item
   * @param  sym_tab_item_type it - item type
-  * @param  sym_tab_datatype dt - data type
-  * @param  bool def - defined
+  * @param  data_type return_data_types - return data types
+  * @param  data_type param_data_types - parameters data types
+  * @param  sym_tab_defined_t def - defined
+  * @param  sym_tab_declared_t dec - declared
   * @param  int par - number of parameters
-  * @return sym_tab_item_t - added item
+  * @return bool - if data were succesfuly added
 */
-bool sym_tab_add_data(sym_tab_item_t *item,sym_tab_item_type it,sym_tab_datatype dt,bool def,int par)
+
+bool sym_tab_add_data_function(sym_tab_item_t *item,data_type return_data_types,data_type param_data_types,sym_tab_declared_t dec,sym_tab_defined_t def,int par)
 {
 	if(!item)
 	{
 		return false;
 	}
-	item->data.item_type = it;
-	item->data.datatype = dt;
+	item->data.item_type = HT_FUNC;
+	item->data.return_data_types = return_data_types;
+	item->data.param_data_types = param_data_types;
+	item->data.declared = dec;
 	item->data.defined = def;
 	item->data.params = par;
 	return true;
 }
+/**
+  * @desc add data to VARIABLE
+  * @param sym_tab_item_t *item - specific item
+  * @param  sym_tab_item_type it - item type
+  * @param  data_type param_data_types - parameters data types
+  * @param  sym_tab_defined_t def - defined
+  * @param  sym_tab_declared_t dec - declared
+  * @return bool - if data were succesfuly added
+*/
 
+bool sym_tab_add_data_var(sym_tab_item_t *item,data_type param_data_types,sym_tab_declared_t dec,sym_tab_defined_t def)
+{
+	if(!item)
+	{
+		return false;
+	}
+	item->data.item_type = HT_FUNC;
+	item->data.return_data_types = create_data_type(NIL);
+	item->data.param_data_types = param_data_types;
+	item->data.declared = dec;
+	item->data.defined = def;
+	item->data.params = 0;
+	return true;
+}
 /**
   * @desc delete all items in symbol table
   * @param  sym_tab_t *t - current symbol table
@@ -258,7 +330,9 @@ sym_tab_t *sym_tab_move(sym_tab_t *from)
 				return NULL;
 			sym_tab_find_in_table(t, tmp->key)->key = sym_tab_find_in_table(from, tmp->key)->key;
 			sym_tab_find_in_table(t, tmp->key)->data.params = sym_tab_find_in_table(from, tmp->key)->data.params;
-			sym_tab_find_in_table(t, tmp->key)->data.datatype = sym_tab_find_in_table(from, tmp->key)->data.datatype;
+			sym_tab_find_in_table(t, tmp->key)->data.param_data_types = sym_tab_find_in_table(from, tmp->key)->data.param_data_types;
+			sym_tab_find_in_table(t,tmp->key)->data.return_data_types = sym_tab_find_in_table(from,tmp->key)->data.return_data_types;
+			sym_tab_find_in_table(t, tmp->key)->data.declared = sym_tab_find_in_table(from, tmp->key)->data.declared;
 			sym_tab_find_in_table(t, tmp->key)->data.defined = sym_tab_find_in_table(from, tmp->key)->data.defined;
 			sym_tab_find_in_table(t, tmp->key)->data.item_type = sym_tab_find_in_table(from, tmp->key)->data.item_type;
 			sym_tab_find_in_table(t, tmp->key)->next = sym_tab_find_in_table(from, tmp->key)->next;
@@ -303,4 +377,5 @@ bool isvar(sym_tab_t * t, sym_tab_key_t key)
 	return false;
 
 }
+
 
