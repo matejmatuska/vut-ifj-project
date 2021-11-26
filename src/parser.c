@@ -32,8 +32,13 @@
 
 token_t *token;
 
-#define GET_NEXT_TOKEN() \
-    do { if (get_next_token(token) == LEX_ERR) { return false; } } while (0)
+#define GET_NEXT_TOKEN()                            \
+    do {                                            \
+        if (get_next_token(token) == LEX_ERR) {     \
+            ERROR = LEX_ERR;                        \
+            return false;                           \
+        }                                           \
+    } while (0)
 
 
 int ERROR = 0;
