@@ -64,6 +64,8 @@ data_type add_data_type(data_type first, sym_tab_datatype value)
 	}
 	return first;
 }
+
+
 /**
   * Delete all data types from list
 * @param data_type first -> list we want to delete
