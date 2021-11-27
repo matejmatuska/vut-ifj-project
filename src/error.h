@@ -3,6 +3,7 @@
 
 typedef enum
 {
+    SYNTAX_OK = 0,
     LEX_ERR = 1,
     SYNTAX_ERR = 2,
     UNDEFINED_ERR = 3,

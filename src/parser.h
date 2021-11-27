@@ -3,6 +3,10 @@
 
 #include <stdbool.h>
 
-bool program();
+/**
+ * Starts the syntactical analysis
+ * @return error code
+ */
+int parse();
 
 #endif
