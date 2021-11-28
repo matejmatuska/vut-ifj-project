@@ -52,9 +52,9 @@ bool body();
 bool fnc_def();
 bool glob_def();
 bool id_def();
-bool param_list();
-bool next_param();
-bool ret_type_list();
+bool param_list(data_type *par_type, int *num);
+bool next_param(data_type *par_type, int *num);
+bool ret_type_list(data_type *ret_type, int * num);
 bool st_list();
 bool st_local();
 bool st_if();
@@ -66,8 +66,8 @@ bool option();
 bool expr();
 bool exp_list();
 bool next_exp();
-bool type_list();
-bool next_type();
+bool type_list(data_type *types, int * num);
+bool next_type(data_type *types, int * num);
 bool is_type ();
 bool term_list();
 bool next_term();
@@ -136,15 +136,22 @@ bool body() {
     }
     return false;
 }
-
+//function (...)
 bool fnc_def() {
     GET_NEXT_TOKEN();
+    sym_tab_item_t *item;
+    data_type *ret_type = NULL;
+    data_type *par_type = NULL;
+    int par_num = 0;
+    int ret_num = 0;
     if (!TOK_IS_ID) {
         return false;
     } else {
-        sym_tab_item_t *item = SYM_FIND();
+        item = SYM_FIND();
         if(item == NULL){
             item = sym_tab_add_item(top_table(scope), ID_NAME());
+            sym_tab_add_data_function(item, *ret_type, *par_type, true, true, par_num);
+
             //todo add item into scope
         }
     }
@@ -154,17 +161,25 @@ bool fnc_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    if (!param_list()) {
+    //create_data_type(par_type);
+    if (!param_list(par_type, &par_num)) {
         return false;
     }
+
+    sym_tab_add_data_function(item, *ret_type, *par_type, true, true, par_num);
+
 //    GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    if (!ret_type_list()) {
+    //create_data_type(ret_type);
+    if (!ret_type_list(ret_type, &ret_num)) {
         return false;
     }
+
+    sym_tab_add_data_function(item, *ret_type, *par_type, true, true, par_num);
+
     if (!st_list()) {
         return false;
     }
@@ -179,15 +194,31 @@ bool fnc_def() {
 
 bool glob_def() {
 
+    sym_tab_item_t *item;
+    data_type *ret_type = NULL;
+    data_type *par_type = NULL;
+    int par_num = 0;
+    int ret_num = 0;
+
     GET_NEXT_TOKEN();
 
     if (!TOK_IS_ID) {
         ERROR = SYNTAX_ERR;
         return false;
+    } else {
+        item = SYM_FIND();
+        if(item == NULL){
+            item = sym_tab_add_item(top_table(scope), ID_NAME());
+            sym_tab_add_data_function(item, *ret_type, *par_type, true, false, par_num);
+
+            //todo add item into scope
+        } else {
+            //Zde může nastat problém, pokud funkce může být definovaná, až po deklaraci (logciky mi dává, že by neměla)
+            ERROR = SEMANTIC_ERR;
+            return false;
+        }
     }
-/*    sym_tab_item_t *item_to_add;
-    item_to_add = sym_tab_add_item(top_table(scope), "f");
-*/
+
 
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
@@ -204,7 +235,11 @@ bool glob_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    if (!type_list()) {
+    if (!type_list(par_type, &par_num)) {
+        return false;
+    }
+    if(!sym_tab_add_data_function(item, *ret_type, *par_type, true, false, par_num)){
+        ERROR = INTERNAL_ERR;
         return false;
     }
 //    GET_NEXT_TOKEN();
@@ -212,9 +247,15 @@ bool glob_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    if (!ret_type_list()) {
+    if (!ret_type_list(ret_type, &ret_num)) {
         return false;
     }
+
+    if(!sym_tab_add_data_function(item, *ret_type, *par_type, true, false, par_num)){
+        ERROR = INTERNAL_ERR;
+        return false;
+    }
+
     if (!body())
         return false;
 
@@ -242,7 +283,7 @@ bool id_def() {
 
 }
 
-bool param_list() {
+bool param_list(data_type *par_type, int *num) {
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
         return true;
@@ -253,12 +294,15 @@ bool param_list() {
     GET_NEXT_TOKEN();
     if(!is_type())
         return false;
-    if(next_param())
+    *par_type = create_data_type(token->type);
+    *num++;
+
+    if(next_param(par_type,num))
         return true;
     return false;
 }
 
-bool next_param() {
+bool next_param(data_type *par_type, int *num) {
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
         return true;
@@ -267,15 +311,21 @@ bool next_param() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+
     GET_NEXT_TOKEN();
     if(!TOK_IS_ID)
         return false;
     GET_NEXT_TOKEN();
-    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {ERROR = SYNTAX_ERR; return false; }
+    if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) 
+    {
+        ERROR = SYNTAX_ERR; return false;
+    }
     GET_NEXT_TOKEN();
     if(!is_type())
         return false;
-    if(next_param())
+    add_data_type(*par_type, token->type);
+    *num++;
+    if(next_param(par_type, num))
         return true;
     return false;
 }
@@ -284,7 +334,7 @@ bool next_param() {
 /**
  * <ret-type-list> -> : <type> <next-type>
  */
-bool ret_type_list() {
+bool ret_type_list(data_type *ret_type, int* num) {
     GET_NEXT_TOKEN();
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) ||TOK_IS_KW(KW_END) ||TOK_IS_TYPE(TOKEN_TYPE_EOF) ||TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
         return true;
@@ -293,12 +343,15 @@ bool ret_type_list() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+    
 
     GET_NEXT_TOKEN();
     if(!is_type())
         return false;
+    ret_type = create_data_type(token->type);
+    *num++;
 
-    if(next_type())
+    if(next_type(ret_type, num))
         return true;
 
     return false;
@@ -363,9 +416,15 @@ bool st_local(){
         ERROR = SYNTAX_ERR;
         return false;
     }
-    sym_tab_item_t * item_to_add;
-    //item_to_add = sym_tab_add_item(top_table(scope), token->attribute.string->s);
-
+    sym_tab_item_t * item_to_add =  NULL;
+    data_type *par_type = NULL;
+    //Zjistí zda se nejedná o redekleraci či redefinici
+    if(SYM_FIND() != NULL) {
+        ERROR = SEMANTIC_ERR;
+        return false;
+    }
+    
+    item_to_add = sym_tab_add_item(top_table(scope), ID_NAME());
     GET_NEXT_TOKEN();
     if(!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
         ERROR = SYNTAX_ERR;
@@ -376,17 +435,18 @@ bool st_local(){
     if(!is_type())
         return false;
 
-    sym_tab_datatype type = get_datatype();
+    par_type =  create_data_type(get_datatype());
+    sym_tab_add_data_var(item_to_add, *par_type, true, false);
+    
 
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
         //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
-
         if(!expr())
             return false;
-        //        if(expr(&token, scope, &result)) //TODO
+        sym_tab_add_data_var(item_to_add, *par_type, true, true);
     } else {
-        //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
+        
     }
     return true;
 }
@@ -463,7 +523,7 @@ bool exp_list() {
 
 bool next_exp(){
 
-    //TODO added else to next_exp predict, is it ok?
+    //TODO added else to next_exp predict, is it ok? yep
     if(TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_ELSE) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID || TOK_IS_KW(KW_END))
         return true;
 
@@ -499,19 +559,19 @@ bool expr() {
     return false;
 }
 
-bool type_list() {
+bool type_list(data_type *types, int * num) {
     GET_NEXT_TOKEN();
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB))
         return true;
     if(!is_type())
         return false;
 
-    if(next_type())
+    if(next_type(types, num))
         return true;
     return false;
 }
 
-bool next_type(){
+bool next_type(data_type *types, int * num){
     GET_NEXT_TOKEN();
     if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) ||TOK_IS_KW(KW_END) ||TOK_IS_TYPE(TOKEN_TYPE_EOF) ||TOK_IS_KW(KW_IF) ||TOK_IS_KW(KW_WHILE) ||TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
         return true;
@@ -522,7 +582,9 @@ bool next_type(){
     GET_NEXT_TOKEN();
     if(!is_type())
         return false;
-   return next_type();
+    types = create_data_type(token->type);
+    *num++;
+   return next_type(types, num);
 
 }
 
