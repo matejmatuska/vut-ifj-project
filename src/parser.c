@@ -30,6 +30,7 @@
 #define ID_NAME() \
     (token->attribute.string->s)
 
+
 token_t *token;
 
 #define GET_NEXT_TOKEN()                            \
@@ -74,6 +75,7 @@ bool next_term();
 bool is_term();
 bool id_list();
 bool next_id();
+bool is_type_data();
 
 int parse()
 {
@@ -217,7 +219,7 @@ bool glob_def() {
             //todo add item into scope
         } else {
             //Zde může nastat problém, pokud funkce může být definovaná, až po deklaraci (logciky mi dává, že by neměla)
-            ERROR = SEMANTIC_ERR;
+            ERROR = UNDEFINED_ERR;
             return false;
         }
     }
@@ -298,7 +300,7 @@ bool param_list(data_type *par_type, int *num) {
     if(!is_type())
         return false;
     *par_type = create_data_type(get_datatype());
-    *num++;
+    *(num++);
 
     if(next_param(par_type,num))
         return true;
@@ -327,7 +329,7 @@ bool next_param(data_type *par_type, int *num) {
     if(!is_type())
         return false;
     add_data_type(*par_type, get_datatype());
-    *num++;
+    *(num++);
     if(next_param(par_type, num))
         return true;
     return false;
@@ -352,7 +354,7 @@ bool ret_type_list(data_type *ret_type, int* num) {
     if(!is_type())
         return false;
     *ret_type = create_data_type(get_datatype());
-    *num++;
+    *(num++);
 
     if(next_type(ret_type, num))
         return true;
@@ -387,7 +389,7 @@ bool st_list() {
 
 
             //TODO
-            if(isfunc(top_table(scope), token->attribute.string->s)){
+            if(isfunc(&scope, token->attribute.string->s)){
                 if (!st_fnc_id()) {
                     ERROR = SYNTAX_ERR;
                     return false;
@@ -423,7 +425,7 @@ bool st_local(){
     data_type par_type = NULL;
     //Zjistí zda se nejedná o redekleraci či redefinici
     if(SYM_FIND() != NULL) {
-        ERROR = SEMANTIC_ERR;
+        ERROR = UNDEFINED_ERR;
         return false;
     }
     
@@ -445,8 +447,30 @@ bool st_local(){
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
         //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
-        if(!expr())
+        GET_NEXT_TOKEN();
+        if(TOK_IS_ID){
+
+        if(isfunc(&scope, token->attribute.string->s)){
+            if (!st_fnc_id()) {
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+        }
+        else {
+            if (!st_var_id()) {
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+        }
+        } else if (is_type_data()){
+            if (!expr()) {
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+        } else {
+            ERROR = SYNTAX_ERR;
             return false;
+        }
         sym_tab_add_data_var(item_to_add, par_type, true, true);
     } else {
         
@@ -498,14 +522,73 @@ bool st_return(){
 
 //Can be Macro for better usage
 bool st_fnc_id(){
+    char * name = ID_NAME();
+    sym_tab_item_t * item = scope_search(&scope, name);
+    GET_NEXT_TOKEN();
+    if(!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
 
-    return false;
+    GET_NEXT_TOKEN();
+    data_type par_typy = NULL;
+    par_typy = item->data.param_data_types;
+    datatypes_list * typ = NULL;
+
+    for(int i = 0; i < item->data.params; i++){
+        GET_NEXT_TOKEN();
+        if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+            ERROR = SYNTAX_ERR;
+            return false;
+        }
+
+        if (TOK_IS_ID){
+            sym_tab_item_t * id = scope_search(&scope, ID_NAME());
+            if(id == NULL){
+                ERROR = UNDEFINED_ERR;
+                return false;
+            } else {
+                if(!id->data.defined){
+                    ERROR = UNDEFINED_ERR;
+                    return false;
+                }
+                typ = item->data.return_data_types->next;
+
+                if(typ->datatype != id->data.return_data_types->datatype) {
+                    ERROR = TYPE_INCOMPATIBILITY_ERR;
+                    return false;
+                }
+
+
+
+                GET_NEXT_TOKEN();
+
+                if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1){
+                    break;
+                } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
+                    ERROR = PARAMETERS_ERR;
+                    return false;
+                } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)){
+                    continue;
+                } else {
+                    ERROR = SYNTAX_ERR;
+                    return false;
+                }
+
+
+
+            }
+        }
+    }
+
+
+    return true;
 }
 
 
 bool st_var_id(){
     //TODO Možná lepší v id_list/next_id?
-    while (sym_tab_find_in_table(top_table(scope), token->attribute.string->s) != NULL) {
+    while (sym_tab_find_in_table(top_table(scope), ID_NAME()) != NULL) {
         GET_NEXT_TOKEN();
         if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
             //Poslat další token nebo to nechat na parseru?
@@ -586,13 +669,20 @@ bool next_type(data_type *types, int * num){
     if(!is_type())
         return false;
     *types = add_data_type(*types, get_datatype());
-    *num++;
+    *(num++);
    return next_type(types, num);
 
 }
 
 bool is_type (){
     if(TOK_IS_KW(KW_INTEGER) || TOK_IS_KW(KW_NUMBER) || TOK_IS_KW(KW_STRING))
+        return true;
+    ERROR = SYNTAX_ERR;
+    return false;
+}
+
+bool is_type_data(){
+    if(TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_STR)  || TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) )
         return true;
     ERROR = SYNTAX_ERR;
     return false;
