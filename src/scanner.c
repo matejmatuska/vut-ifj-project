@@ -98,6 +98,11 @@ int make_string(token_t *token, dynamic_string_t *value)
                 dyn_str_del_character(value, i);
                 value->s[i] = '\t';
             }
+            else if (value->s[i + 1] == '"')
+            {
+                dyn_str_del_character(value, i);
+                value->s[i] = '"';
+            }
             else if (isdigit(value->s[i + 1]))
             {
                 char substring[4];
@@ -358,7 +363,7 @@ int get_next_token(token_t* current_token)
             else if (c == '\n')
                 state = START_STATE;
             else
-                state = LINE_COMMENT_STATE_2;
+                state = LINE_COMMENT_STATE;
             break;
 
         case POTENTIAL_BLOCK_COMMENT_STATE:
@@ -373,29 +378,24 @@ int get_next_token(token_t* current_token)
         case BLOCK_COMMENT_STATE:
             if (c == ']')
                 state = POTENTIAL_END_OF_BLOCK_COMMENT_STATE;
+            else if (c == '\n' || c == EOF)
+                state = START_STATE;
             else
                 state = BLOCK_COMMENT_STATE;
             break;
 
         case POTENTIAL_END_OF_BLOCK_COMMENT_STATE:
-            if (c == ']')
+            if (c == ']' || c == '\n' || c == EOF)
                 state = START_STATE;
             else
                 state = BLOCK_COMMENT_STATE;
             break;
 
         case LINE_COMMENT_STATE:
-            if (c == '\n')
+            if (c == '\n' || (c == EOF))
                 state = START_STATE;
             else
                 state = LINE_COMMENT_STATE;
-            break;
-
-        case LINE_COMMENT_STATE_2:
-            if (c == '\n')
-                state = START_STATE;
-            else
-                state = LINE_COMMENT_STATE_2;
             break;
 
         case ID_STATE:
@@ -549,7 +549,7 @@ int get_next_token(token_t* current_token)
             break;
 
         case START_OF_ESCAPE_SEQ_STATE:
-            if ((c == '\\') || (c == 'n') || (c == 't'))
+            if ((c == '\\') || (c == 'n') || (c == 't')|| (c == '"'))
             {
                 dyn_str_add_character(value, c);
                 state = START_OF_STRING_STATE;
@@ -566,23 +566,27 @@ int get_next_token(token_t* current_token)
             break;
 
         case ASCII_SECOND_VALUE_STATE:
-            if (('0' <= c) && (c <= '9'))
+            if (('0' <= c) && (c <= '5'))
             {
                 dyn_str_add_character(value, c);
                 state = ASCII_THIRD_VALUE_STATE;
             }
             else
+            {
                 error(LEX_ERR, value)
+            }
             break;
 
         case ASCII_THIRD_VALUE_STATE:
-            if (('0' <= c) && (c <= '9'))
+            if (('0' <= c) && (c <= '5'))
             {
                 dyn_str_add_character(value, c);
                 state = START_OF_STRING_STATE;
             }
             else
-                error(LEX_ERR, value);
+            {
+                error(LEX_ERR, value)
+            }
             break;
 
         case STRING_STATE:
