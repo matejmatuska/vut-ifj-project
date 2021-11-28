@@ -77,17 +77,13 @@ bool next_id();
 
 int parse()
 {
+    scope = init_ST_stack();
     token = malloc(sizeof(token_t));
 
     int result = program();
 
     free(token);
-
-    sym_tab_t *tab = top_table(scope);
-    if (tab)
-        sym_tab_free(tab);
-
-    free(scope);
+    free_ST_stack(&scope);
     return result;
 }
 
