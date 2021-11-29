@@ -65,6 +65,27 @@ void get_source(FILE *file)
     source = file;
 }
 
+void token_init(token_t* token)
+{
+    token->type = TOKEN_TYPE_INT;
+    token->attribute.integer_value = 0;
+}
+
+void token_free(token_t* token)
+{
+    //dyn_str_free if the token type is ID or STRING
+    if (token->type == TOKEN_TYPE_ID || token->type == TOKEN_TYPE_STR)
+    {
+        dyn_str_free(token->attribute.string);
+        token->attribute.integer_value = 0;
+    }
+    else
+    {
+        token->attribute.integer_value = 0;
+    }
+    token->type = TOKEN_TYPE_INT;
+}
+
 int make_number(token_t *token, dynamic_string_t *value)
 {
     if (token->type == TOKEN_TYPE_INT)
@@ -234,12 +255,7 @@ int get_next_token(token_t* current_token)
     if (source == NULL)
         return INTERNAL_ERR;
      
-    //dyn_str_free if the previous token type is ID or STRING
-    if (current_token->type == TOKEN_TYPE_ID || current_token->type == TOKEN_TYPE_STR)
-    {
-        dyn_str_free(current_token->attribute.string);
-        current_token->type = TOKEN_TYPE_EOF;
-    }
+    token_free(current_token);
 
     dynamic_string_t* value = NULL;
     
