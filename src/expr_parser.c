@@ -12,7 +12,6 @@ typedef enum {
     R, // reduce
     H, // shift with handle
     E, // error
-    T // TODO
 } ops_t;
 
 // assigned values are indices to the precedence lookup table
@@ -35,9 +34,9 @@ static ops_t op_lookup[TABLE_SIZE][TABLE_SIZE] = {
     { R, H, R, H, R, H, R, H, R },
     { R, R, R, H, R, H, R, H, R },
     { H, H, R, H, H, H, R, H, R },
-    { R, R, R, T, R, H, T, H, R },
+    { R, R, R, H, R, H, R, H, R },
     { H, H, R, H, H, H, R, H, R },
-    { H, H, H, T, H, H, S, H, E },
+    { H, H, H, H, H, H, S, H, E },
     { R, R, R, E, R, E, R, E, R },
     { R, R, R, E, R, E, R, E, R },
     { H, H, H, H, H, H, E, H, E }
