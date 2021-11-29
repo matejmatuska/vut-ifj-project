@@ -521,7 +521,7 @@ bool st_fnc_id(){
     char * name = ID_NAME();
     sym_tab_item_t * item = scope_search(&scope, name);
     GET_NEXT_TOKEN();
-    if(!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
+    if(!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)){
         ERROR = SYNTAX_ERR;
         return false;
     }
@@ -633,7 +633,6 @@ bool option(){
 bool expr() {
    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
 
-    GET_NEXT_TOKEN();
     ERROR = parse_expr(token);
     if (ERROR == 0) {
         return true;
