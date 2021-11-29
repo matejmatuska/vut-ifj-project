@@ -65,6 +65,27 @@ void get_source(FILE *file)
     source = file;
 }
 
+void token_init(token_t* token)
+{
+    token->type = TOKEN_TYPE_INT;
+    token->attribute.integer_value = 0;
+}
+
+void token_free(token_t* token)
+{
+    //dyn_str_free if the token type is ID or STRING
+    if (token->type == TOKEN_TYPE_ID || token->type == TOKEN_TYPE_STR)
+    {
+        dyn_str_free(token->attribute.string);
+        token->attribute.integer_value = 0;
+    }
+    else
+    {
+        token->attribute.integer_value = 0;
+    }
+    token->type = TOKEN_TYPE_INT;
+}
+
 int make_number(token_t *token, dynamic_string_t *value)
 {
     if (token->type == TOKEN_TYPE_INT)
@@ -120,12 +141,6 @@ int make_string(token_t *token, dynamic_string_t *value)
             }
         }
     }
-    /*
-        dynamic_string_t str1;
-        dynamic_string_t * str2 = &str1;
-        dyn_str_init(str2);
-        dyn_str_copy(str2,value);
-        */
         token->attribute.string = value;
         
     return 0;
@@ -225,16 +240,9 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     }
     else
     {
-        /*
-        dynamic_string_t str1;
-        dynamic_string_t * str2 = &str1;
-        dyn_str_init(str2);
-        dyn_str_copy(str2,value);
-          */
         token->attribute.string = value;
         return 0;
     }
-    //dyn_str_clear(value);
     dyn_str_free(value);
     return 0;
 }
@@ -246,11 +254,10 @@ int get_next_token(token_t* current_token)
     //checking file
     if (source == NULL)
         return INTERNAL_ERR;
+     
+    token_free(current_token);
 
     dynamic_string_t* value = NULL;
-
-    //static dynamic_string_t str;
-    //static dynamic_string_t *value = &str;
     
     char c;
     // initial state
