@@ -120,12 +120,6 @@ int make_string(token_t *token, dynamic_string_t *value)
             }
         }
     }
-    /*
-        dynamic_string_t str1;
-        dynamic_string_t * str2 = &str1;
-        dyn_str_init(str2);
-        dyn_str_copy(str2,value);
-        */
         token->attribute.string = value;
         
     return 0;
@@ -225,16 +219,9 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     }
     else
     {
-        /*
-        dynamic_string_t str1;
-        dynamic_string_t * str2 = &str1;
-        dyn_str_init(str2);
-        dyn_str_copy(str2,value);
-          */
         token->attribute.string = value;
         return 0;
     }
-    //dyn_str_clear(value);
     dyn_str_free(value);
     return 0;
 }
@@ -246,11 +233,15 @@ int get_next_token(token_t* current_token)
     //checking file
     if (source == NULL)
         return INTERNAL_ERR;
+     
+    //dyn_str_free if the previous token type is ID or STRING
+    if (current_token->type == TOKEN_TYPE_ID || current_token->type == TOKEN_TYPE_STR)
+    {
+        dyn_str_free(current_token->attribute.string);
+        current_token->type = TOKEN_TYPE_EOF;
+    }
 
     dynamic_string_t* value = NULL;
-
-    //static dynamic_string_t str;
-    //static dynamic_string_t *value = &str;
     
     char c;
     // initial state
