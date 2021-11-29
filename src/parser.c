@@ -106,7 +106,7 @@ int program() {
         ERROR = SYNTAX_ERR;
         return ERROR;
     }
-
+    push(&scope);
     if (!body())
         return ERROR;
 
@@ -119,7 +119,7 @@ int program() {
 }
 
 bool body() {
-    push(&scope);
+
     if(TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF) || TOK_IS_ID){
 
     } else
@@ -297,7 +297,7 @@ bool param_list(data_type *par_type, int *num) {
     if(!is_type())
         return false;
     *par_type = create_data_type(get_datatype());
-    *(num++);
+    (*num)++;
 
     if(next_param(par_type,num))
         return true;
@@ -326,7 +326,7 @@ bool next_param(data_type *par_type, int *num) {
     if(!is_type())
         return false;
     add_data_type(*par_type, get_datatype());
-    *(num++);
+    (*num)++;
     if(next_param(par_type, num))
         return true;
     return false;
@@ -351,7 +351,7 @@ bool ret_type_list(data_type *ret_type, int* num) {
     if(!is_type())
         return false;
     *ret_type = create_data_type(get_datatype());
-    *(num++);
+    (*num)++;
 
     if(next_type(ret_type, num))
         return true;
@@ -386,15 +386,14 @@ bool st_list() {
 
 
             //TODO
-            if(isfunc(&scope, token->attribute.string->s)){
+            if (isfunc(&scope, ID_NAME())) {
                 if (!st_fnc_id()) {
                     ERROR = SYNTAX_ERR;
                     return false;
                 }
-            }
-            else {
+            } else {
                 if (!st_var_id()) {
-                    ERROR = SYNTAX_ERR;
+//                    ERROR = SYNTAX_ERR;
                     return false;
                 }
             }
@@ -447,18 +446,13 @@ bool st_local(){
         GET_NEXT_TOKEN();
         if(TOK_IS_ID){
 
-        if(isfunc(&scope, token->attribute.string->s)){
-            if (!st_fnc_id()) {
-                ERROR = SYNTAX_ERR;
-                return false;
+            if (isfunc(&scope, ID_NAME())) {
+                if (!st_fnc_id()) {
+                    return false;
+                }
+            } else {
+                return expr();
             }
-        }
-        else {
-            if (!st_var_id()) {
-                ERROR = SYNTAX_ERR;
-                return false;
-            }
-        }
         } else if (is_type_data()){
             if (!expr()) {
                 ERROR = SYNTAX_ERR;
@@ -529,10 +523,10 @@ bool st_fnc_id(){
         return false;
     }
 
-    GET_NEXT_TOKEN();
+    // GET_NEXT_TOKEN();
     data_type par_typy = NULL;
     par_typy = item->data.param_data_types;
-    datatypes_list * typ = NULL;
+    datatypes_list *typ = item->data.param_data_types;
 
     for(int i = 0; i < item->data.params; i++){
         GET_NEXT_TOKEN();
@@ -551,7 +545,7 @@ bool st_fnc_id(){
                     ERROR = UNDEFINED_ERR;
                     return false;
                 }
-                typ = item->data.return_data_types->next;
+
 
                 if(typ->datatype != id->data.return_data_types->datatype) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
@@ -559,7 +553,7 @@ bool st_fnc_id(){
                 }
 
 
-
+                typ = item->data.param_data_types->next;
                 GET_NEXT_TOKEN();
 
                 if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1){
@@ -575,26 +569,27 @@ bool st_fnc_id(){
                 }
 
 
-
             }
         }
     }
 
-
+    GET_NEXT_TOKEN();
     return true;
 }
 
 
 bool st_var_id(){
-    //TODO Možná lepší v id_list/next_id?
+
     while (sym_tab_find_in_table(top_table(scope), ID_NAME()) != NULL) {
         GET_NEXT_TOKEN();
         if(TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
             //Poslat další token nebo to nechat na parseru?
-            return expr();
+            ERROR = expr();
+            return true;
         }
 
     }
+    ERROR = SYNTAX_ERR;
     return false;
 }
 
@@ -649,7 +644,9 @@ bool type_list(data_type *types, int * num) {
         return true;
     if(!is_type())
         return false;
+
     *types = create_data_type(get_datatype());
+    (*num)++;
     if(next_type(types, num))
         return true;
     return false;
@@ -667,7 +664,7 @@ bool next_type(data_type *types, int * num){
     if(!is_type())
         return false;
     *types = add_data_type(*types, get_datatype());
-    *(num++);
+    (*num)++;
    return next_type(types, num);
 
 }
@@ -712,6 +709,7 @@ bool next_id(){
     }
     return next_id();
 }
+
 //TODO překopat na zjišťování správných parametrů
 bool term_list() {
     GET_NEXT_TOKEN();
