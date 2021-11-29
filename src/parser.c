@@ -478,6 +478,7 @@ bool st_local(){
  * <statement> -> if <expr> then <st-list> else <st-list> end
  */
 bool st_if(){
+    GET_NEXT_TOKEN();
     if (!expr())
         return false;
     if (!TOK_IS_KW(KW_THEN)) { ERROR = SYNTAX_ERR; return false; }
@@ -497,6 +498,7 @@ bool st_if(){
  * <statement> -> while <expr> do <st-list> end
  */
 bool st_while(){
+    GET_NEXT_TOKEN();
     if(!expr())
         return false;
     if(!TOK_IS_KW(KW_DO)) {ERROR = SYNTAX_ERR; return false; }
@@ -596,7 +598,7 @@ bool st_var_id(){
 }
 
 bool exp_list() {
-    // GET_NEXT_TOKEN(); if we call this here expr skips one token
+    GET_NEXT_TOKEN();
     if(!expr())
         return false;
 
