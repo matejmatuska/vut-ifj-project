@@ -81,6 +81,7 @@ int parse()
 {
     scope = init_ST_stack();
     token = malloc(sizeof(token_t));
+    token_init(token);
 
     int result = program();
 
