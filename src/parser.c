@@ -92,6 +92,8 @@ bool next_type(data_type *types, int *num);
 
 bool is_type();
 
+sym_tab_datatype get_type_to_sym_type();
+
 bool term_list();
 
 bool next_term();
@@ -155,7 +157,7 @@ bool body() {
     } else if (TOK_IS_KW(KW_FUNCTION)) {
         return fnc_def();
     } else if (token->type == TOKEN_TYPE_ID) {
-        return id_def();
+        return st_fnc_id();
     } else if (token->type == TOKEN_TYPE_EOF) {
         return true;
     }
@@ -255,8 +257,9 @@ bool fnc_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-
+    GET_NEXT_TOKEN();
     pop(&scope);
+
     if (!body())
         return false;
     return true;
@@ -636,6 +639,10 @@ bool st_return() {
 bool st_fnc_id() {
     char *name = ID_NAME();
     sym_tab_item_t *item = scope_search(&scope, name);
+    if(item == NULL){
+        ERROR = UNDEFINED_ERR;
+        return false;
+    }
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
         ERROR = SYNTAX_ERR;
@@ -650,9 +657,11 @@ bool st_fnc_id() {
     for (int i = 0; i < item->data.params; i++) {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
-            ERROR = SYNTAX_ERR;
+            ERROR = PARAMETERS_ERR;
             return false;
         }
+
+
 
         if (TOK_IS_ID) {
             sym_tab_item_t *id = scope_search(&scope, ID_NAME());
@@ -670,7 +679,13 @@ bool st_fnc_id() {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
                 }
-
+            }
+        } else  if (is_type_data()) {
+            if (get_type_to_sym_type() != typ->datatype) {
+                ERROR = TYPE_INCOMPATIBILITY_ERR;
+                return false;
+            }
+        }
 
                 typ = item->data.param_data_types->next;
                 GET_NEXT_TOKEN();
@@ -681,17 +696,16 @@ bool st_fnc_id() {
                     ERROR = PARAMETERS_ERR;
                     return false;
                 } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+                    if (i == item->data.params - 1){
+                        ERROR = PARAMETERS_ERR;
+                        return false;
+                    }
                     continue;
                 } else {
                     ERROR = SYNTAX_ERR;
                     return false;
                 }
-
-
-            }
-        }
     }
-
     GET_NEXT_TOKEN();
     return true;
 }
@@ -731,6 +745,7 @@ bool next_exp() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+    GET_NEXT_TOKEN();
 
     return expr();
 }
@@ -811,6 +826,17 @@ sym_tab_datatype get_datatype() {
     else if (TOK_IS_KW(KW_NUMBER))
         return NUMBER;
     else if (TOK_IS_KW(KW_STRING))
+        return STRING;
+
+    return NIL;
+}
+
+sym_tab_datatype get_type_to_sym_type(){
+    if (TOK_IS_TYPE(TOKEN_TYPE_INT))
+        return INTEGER;
+    else if (TOK_IS_TYPE(TOKEN_TYPE_DOUBLE))
+        return NUMBER;
+    else if (TOK_IS_TYPE(TOKEN_TYPE_STR))
         return STRING;
 
     return NIL;
