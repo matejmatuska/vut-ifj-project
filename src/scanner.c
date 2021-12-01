@@ -247,9 +247,22 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     return 0;
 }
 
+token_t *buffer;
+
+void return_token(token_t* token)
+{
+    buffer = token;
+}
+
 //main function , switch
 int get_next_token(token_t* current_token)
 {
+    if (buffer)
+    {
+        *current_token = *buffer;
+        buffer = NULL;
+        return 0;
+    }
 
     //checking file
     if (source == NULL)

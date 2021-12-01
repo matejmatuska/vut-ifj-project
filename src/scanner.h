@@ -70,6 +70,8 @@ typedef struct token
 } token_t;
 
 int get_next_token(token_t* token);
+void return_token(token_t* token);
+
 void token_init(token_t* token);
 void token_free(token_t* token);
 void set_string(dynamic_string_t* string);
