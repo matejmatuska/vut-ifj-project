@@ -324,7 +324,23 @@ int analyze(token_t *token, symbol_stack_t *stack)
                     break;
                 }
             case E: // error
-                return SYNTAX_ERR;
+                {
+                    token_t *next = malloc(sizeof(token_t));
+                    token_init(next);
+
+                    if (get_next_token(next) == LEX_ERR)
+                        return LEX_ERR;
+
+                    if (next->type == TOKEN_TYPE_COLON
+                            || next->type == TOKEN_TYPE_EQUAL
+                            || next->type == TOKEN_TYPE_LEFTB)
+                    {
+                        return_token(next);
+                        return SYNTAX_OK;
+                    }
+
+                    return SYNTAX_ERR;
+                }
         }
         top_terminal = symbol_stack_top_terminal(stack);
         current_sym = token_to_symbol(*token);
