@@ -747,8 +747,10 @@ bool next_exp() {
         return false;
     }
     GET_NEXT_TOKEN();
+    if (!expr())
+        return false;
 
-    return expr();
+    return next_exp();
 }
 
 bool option() {
