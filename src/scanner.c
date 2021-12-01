@@ -247,15 +247,31 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     return 0;
 }
 
+token_t *buffer;
+
+void return_token(token_t* token)
+{
+    buffer = token;
+}
+
 //main function , switch
 int get_next_token(token_t* current_token)
 {
+    token_free(current_token);
+
+    if (buffer)
+    {
+        *current_token = *buffer;
+        token_free(buffer);
+        free(buffer);
+        buffer = NULL;
+        return 0;
+    }
 
     //checking file
     if (source == NULL)
         return INTERNAL_ERR;
      
-    token_free(current_token);
 
     dynamic_string_t* value = NULL;
     
