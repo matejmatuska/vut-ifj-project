@@ -716,6 +716,7 @@ bool st_var_id() {
     while (sym_tab_find_in_table(top_table(scope), ID_NAME()) != NULL) {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
+            GET_NEXT_TOKEN();
             //Poslat další token nebo to nechat na parseru?
             ERROR = expr();
             return true;
