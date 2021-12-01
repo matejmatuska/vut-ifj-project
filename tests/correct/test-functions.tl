@@ -22,5 +22,5 @@ end
 function abcdedg(i: integer, s: string, n: number) : number, integer
 end
 
-function abcdedgf(a: string, i: integer, s: string, n: number) : string, integer, number
+function abcdedgfa(a: string, i: integer, s: string, n: number) : string, integer, number
 end
