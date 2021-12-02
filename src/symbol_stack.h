@@ -5,6 +5,7 @@
 #define SYMBOL_STACK_H
 
 #include <stddef.h>
+#include "scanner.h"
 
 #define DEFAULT_SIZE 20
 
@@ -35,14 +36,25 @@ typedef enum {
     NON_TERMINAL // any non terminal symbol
 } symbol_type_t;
 
+typedef enum data_type {
+    T_NONE,
+    T_BOOL,
+    T_INTEGER,
+    T_NUMBER,
+    T_STRING,
+    T_NIL
+} data_type_t;
+
 typedef struct symbol {
     symbol_type_t type;
+    enum data_type data_type;
     struct symbol *next;
 } symbol_t;
 
 // stack of symbols
 typedef struct symbol_stack {
     symbol_t *top;
+    
 } symbol_stack_t;
 
 /**
@@ -58,7 +70,7 @@ void symbol_stack_init(symbol_stack_t *stack);
  * @param stack to push to
  * @param sym symbol to push
  */
-bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym);
+bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym, data_type_t data_type);
 
 /**
  * Returns symbol on top of stack

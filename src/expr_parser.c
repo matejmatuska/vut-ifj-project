@@ -131,7 +131,7 @@ static ops_t get_operation(symbol_type_t top_terminal, symbol_type_t current_sym
  *
  * @return true symbols match some rule, otherwise false
  */
-static int match_rule(int count, symbol_t *symbols, rule_t *rule)
+static int match_rule(int count, symbol_t *symbols)
 {
     symbol_t *s1 = symbols;
     symbol_t *s2 = symbols ? symbols->next : NULL;
@@ -144,6 +144,7 @@ static int match_rule(int count, symbol_t *symbols, rule_t *rule)
                     || s1->type == INT_LIT || s1->type == NUM_LIT
                     || s1->type == NIL)
             {
+
                 return VAL_TO_E; // E -> i
             }
             return NO_MATCH;
@@ -200,9 +201,9 @@ static int match_rule(int count, symbol_t *symbols, rule_t *rule)
 }
 
 /**
- * Converts token to symbol
+ * Converts token to symbol type
  */
-symbol_type_t token_to_symbol(token_t token)
+symbol_type_t token_to_sym_type(token_t token)
 {
     switch (token.type)
     {
@@ -259,6 +260,30 @@ symbol_type_t token_to_symbol(token_t token)
     }
 }
 
+/**
+ * Returns data type of the token
+ */
+data_type_t get_token_data_type(token_t token)
+{
+    switch (token.type) {
+        case TOKEN_TYPE_INT:
+            return T_INTEGER;
+            break;
+        case TOKEN_TYPE_DOUBLE:
+            return T_NUMBER;
+            break;
+        case TOKEN_TYPE_STR:
+            return T_STRING;
+        case TOKEN_TYPE_KW:
+            if (token.attribute.keyword == KW_NIL)
+                return T_NIL;
+            else
+                return T_NONE;
+        default:
+            return T_NONE;
+    }
+}
+
 static int reduce(symbol_stack_t *stack)
 {
     int count = 0;
@@ -267,8 +292,8 @@ static int reduce(symbol_stack_t *stack)
     if (count < 1 || count > 3)
         return SYNTAX_ERR;
 
-    rule_t rule;
-    if (match_rule(count, to_reduce, &rule) == NO_MATCH)
+    data_type_t data_type;
+    if (match_rule(count, to_reduce) == NO_MATCH)
     {
         return SYNTAX_ERR;
     }
@@ -277,27 +302,25 @@ static int reduce(symbol_stack_t *stack)
     for (int i = 0; i < count + 1; i++)
         symbol_stack_pop(stack);
 
-    symbol_stack_push(stack, NON_TERMINAL);
+    symbol_stack_push(stack, NON_TERMINAL, data_type);
     return SYNTAX_OK;
 }
 
 int analyze(token_t *token, symbol_stack_t *stack)
 {
-    if (!symbol_stack_push(stack, DOLLAR))
+    if (!symbol_stack_push(stack, DOLLAR, T_NONE))
         return INTERNAL_ERR;
 
-    symbol_t *top_terminal;
-    symbol_type_t current_sym;
+    symbol_t *top_term = symbol_stack_top_terminal(stack);
+    symbol_type_t curr_sym = token_to_sym_type(*token);
 
-    top_terminal = symbol_stack_top_terminal(stack);
-    current_sym = token_to_symbol(*token);
-
-    while (!(current_sym == DOLLAR && top_terminal->type == DOLLAR))
+    while (!(curr_sym == DOLLAR && top_term->type == DOLLAR))
     {
-        switch (get_operation(top_terminal->type, current_sym))
+        data_type_t data_type = get_token_data_type(*token);
+        switch (get_operation(top_term->type, curr_sym))
         {
             case S: // shift
-                if (!symbol_stack_push(stack, current_sym))
+                if (!symbol_stack_push(stack, curr_sym, data_type))
                     return INTERNAL_ERR;
                 else
                     if(get_next_token(token) == LEX_ERR)
@@ -308,7 +331,7 @@ int analyze(token_t *token, symbol_stack_t *stack)
                 if (!symbol_stack_insert_handle(stack))
                     return INTERNAL_ERR;
 
-                if (!symbol_stack_push(stack, current_sym))
+                if (!symbol_stack_push(stack, curr_sym, data_type))
                     return INTERNAL_ERR;
 
                 if(get_next_token(token) == LEX_ERR)
@@ -338,12 +361,12 @@ int analyze(token_t *token, symbol_stack_t *stack)
                         return_token(next);
                         return SYNTAX_OK;
                     }
-
+                    //TODO free token in case of error
                     return SYNTAX_ERR;
                 }
         }
-        top_terminal = symbol_stack_top_terminal(stack);
-        current_sym = token_to_symbol(*token);
+        top_term = symbol_stack_top_terminal(stack);
+        curr_sym = token_to_sym_type(*token);
     }
     return SYNTAX_OK;
 }
