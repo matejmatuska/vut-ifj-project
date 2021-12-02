@@ -76,19 +76,19 @@ bool st_return();
 
 bool fnc_id();
 
-bool st_fnc_id(data_type *var_type, int *var_num);
+bool st_fnc_id(name_and_data *var_type, int *var_num);
 
 bool st_var_id();
 
-bool st_next_var_id(data_type *types, int *num);
+bool st_next_var_id(name_and_data *types, int *num);
 
 bool option();
 
-bool expr();
+bool expr(name_and_data *types, int * num);
 
-bool exp_list();
+bool exp_list(name_and_data *types, int * num);
 
-bool next_exp();
+bool next_exp(name_and_data *types, int * num);
 
 bool type_list(data_type *types, int *num);
 
@@ -104,11 +104,13 @@ bool next_term();
 
 bool is_term();
 
-bool id_list(data_type *types, int *num);
+bool id_list(name_and_data *types, int *num);
 
-bool next_id(data_type *types, int *num);
+bool next_id(name_and_data *types, int *num);
 
 bool is_type_data();
+
+data_type name_to_type(name_and_data nameAndData);
 
 int parse() {
     scope = init_ST_stack();
@@ -186,7 +188,7 @@ bool fnc_def() {
         item = SYM_FIND();
         if (item == NULL) {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
-            sym_tab_add_data_function(item, ret_type, par_type, true, true, par_num);
+            sym_tab_add_data_function(item, ret_type, par_type, true, true, par_num, ret_num);
         } else {
             exist = true;
         }
@@ -208,7 +210,7 @@ bool fnc_def() {
     }
     if (!exist) {
         sym_tab_add_data_function(item, ret_type, par_type, true, true,
-                                  par_num);
+                                  par_num, ret_num);
     } else {
         while (par_type != NULL && item->data.param_data_types != NULL) {
             if (item->data.param_data_types->datatype == par_type->datatype) {
@@ -237,7 +239,7 @@ bool fnc_def() {
 
     if (!exist) {
         sym_tab_add_data_function(item, ret_type, par_type, true, true,
-                                  par_num);
+                                  par_num, ret_num);
     } else {
         while (ret_type != NULL && item->data.return_data_types != NULL) {
             if (item->data.return_data_types->datatype == ret_type->datatype) {
@@ -290,7 +292,7 @@ bool glob_def() {
         item = scope_search(&scope, ID_NAME());
         if (item == NULL) {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
-            sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num);
+            sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num, ret_num);
 
             //todo add item into scope
         } else {
@@ -319,7 +321,7 @@ bool glob_def() {
     if (!type_list(&par_type, &par_num)) {
         return false;
     }
-    if (!sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num)) {
+    if (!sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num, ret_num)) {
         ERROR = INTERNAL_ERR;
         return false;
     }
@@ -332,7 +334,7 @@ bool glob_def() {
         return false;
     }
 
-    if (!sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num)) {
+    if (!sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num, ret_num)) {
         ERROR = INTERNAL_ERR;
         return false;
     }
@@ -491,8 +493,9 @@ bool st_list() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-
-    st_list();
+    if(!st_list()){
+        return false;
+    }
 
     return true;
 }
@@ -507,8 +510,13 @@ bool st_local() {
         return false;
     }
     sym_tab_item_t *item_to_add = NULL;
-    data_type par_type = NULL;
+    name_and_data par_type = NULL;
     int num = 0;
+
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, ID_NAME());
+
     //Zjistí zda se nejedná o redekleraci či redefinici
     if (SYM_FIND() != NULL) {
         ERROR = UNDEFINED_ERR;
@@ -526,9 +534,12 @@ bool st_local() {
     if (!is_type())
         return false;
 
-    par_type = create_data_type(get_datatype());
-    sym_tab_add_data_var(item_to_add, par_type, true, false);
 
+
+    par_type = create_name_data(get_datatype(), name);
+    data_type par_typ = name_to_type(par_type);
+    sym_tab_add_data_var(item_to_add, par_typ, true, false);
+    num = 1;
 
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
@@ -540,11 +551,14 @@ bool st_local() {
                 if (!st_fnc_id(&par_type, &num)) {
                     return false;
                 }
+            } else if (isvar(&scope, ID_NAME())){
+                return expr(&par_type, &num);
             } else {
-                return expr();
+                ERROR = UNDEFINED_ERR;
+                return false;
             }
         } else if (is_type_data()) {
-            if (!expr()) {
+            if (!expr(&par_type, &num)) {
                 ERROR = SYNTAX_ERR;
                 return false;
             }
@@ -552,10 +566,11 @@ bool st_local() {
             ERROR = SYNTAX_ERR;
             return false;
         }
-        sym_tab_add_data_var(item_to_add, par_type, true, true);
+        sym_tab_add_data_var(item_to_add, par_typ, true, true);
     } else {
 
     }
+
     return true;
 }
 
@@ -563,8 +578,12 @@ bool st_local() {
  * <statement> -> if <expr> then <st-list> else <st-list> end
  */
 bool st_if() {
+    /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
+ * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
+    name_and_data par_type = NULL;
+    int num = 0;
     GET_NEXT_TOKEN();
-    if (!expr())
+    if (!expr(&par_type, &num))
         return false;
     if (!TOK_IS_KW(KW_THEN)) {
         ERROR = SYNTAX_ERR;
@@ -601,8 +620,12 @@ bool st_if() {
  * <statement> -> while <expr> do <st-list> end
  */
 bool st_while() {
+    /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
+     * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
+    name_and_data par_type = NULL;
+    int num = 0;
     GET_NEXT_TOKEN();
-    if (!expr())
+    if (!expr(&par_type, &num))
         return false;
     if (!TOK_IS_KW(KW_DO)) {
         ERROR = SYNTAX_ERR;
@@ -624,7 +647,10 @@ bool st_while() {
 }
 
 bool st_return() {
-    if (!exp_list())
+    //TODO asi kontrolu
+    name_and_data var_type = NULL;
+    int var_num = 0;
+    if (!exp_list(&var_type, &var_num))
         return false;
 
     //TODO GET_NEXT_TOKEN();
@@ -716,21 +742,37 @@ bool fnc_id() {
     return true;
 }
 
-bool st_fnc_id(data_type *var_type, int *var_num) {
+bool check_returns(name_and_data *var_type, sym_tab_item_t * item, int *var_num){
+    if (*var_num > item->data.returns) {
+        ERROR = PARAMETERS_ERR;
+        return false;
+    }else{
+        name_and_data tmp_name = *var_type;
+        data_type tmp_type = item->data.return_data_types;
+        while (tmp_name != NULL){
+            if(tmp_type->datatype != tmp_name->datatype){
+                ERROR = PARAMETERS_ERR;
+                return false;
+            }
+            tmp_name = tmp_name->next;
+            tmp_type = tmp_type->next;
+        }
+        *var_num -= item->data.returns;
+    }
+
+    return true;
+}
+
+bool st_fnc_id(name_and_data *var_type, int *var_num) {
     char *name = ID_NAME();
     sym_tab_item_t *item = scope_search(&scope, name);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
-    /*
-    if (var_num > item->data.returns) {
-        ERROR = PARAMETERS_ERR;
-        return false;
-    }else{
-        *var_num -= item->data.returns;
-    }
-    */
+
+
+
 //TODO doplnit podle toho, zda se na jedno přiřazení může volat více proměnných. Pokud ne tak se skotroluje počet returnu a počet požadovaných příkazů.
     //Podle toho potom vyhodnotit návratové hodnoty
     GET_NEXT_TOKEN();
@@ -798,19 +840,28 @@ bool st_fnc_id(data_type *var_type, int *var_num) {
     } else {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+            if(!check_returns(var_type, item, var_num)) {
+                return false;
+            }
             return true;
         } else {
             ERROR = PARAMETERS_ERR;
             return false;
         }
     }
+    if(!check_returns(var_type, item, var_num))
+    {
+        return false;
+    }
+
+
 
 
     GET_NEXT_TOKEN();
     return true;
 }
 
-bool st_next_var_id(data_type *var_type, int *var_num) {
+bool st_next_var_id(name_and_data *var_type, int *var_num) {
     if (TOK_IS_KW(KW_END) || TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
         TOK_IS_KW(KW_RETURN) || TOK_IS_ID) {
         return true;
@@ -828,10 +879,10 @@ bool st_next_var_id(data_type *var_type, int *var_num) {
             }
             GET_NEXT_TOKEN();
         } else {
-            return expr();
+            return expr(var_type, var_num);
         }
     } else if (is_type_data()) {
-        if (!expr()) {
+        if (!expr(var_type, var_num)) {
             ERROR = SYNTAX_ERR;
             return false;
         }
@@ -850,7 +901,7 @@ bool st_next_var_id(data_type *var_type, int *var_num) {
 
 bool st_var_id() {
 
-    data_type var_type = NULL;
+    name_and_data var_type = NULL;
     int var_num = 0;
 
 
@@ -870,10 +921,10 @@ bool st_var_id() {
             }
             GET_NEXT_TOKEN();
         } else {
-            return expr();
+            return expr(&var_type, &var_num);
         }
     } else if (is_type_data()) {
-        if (!expr()) {
+        if (!expr(&var_type, &var_num)) {
             ERROR = SYNTAX_ERR;
             return false;
         }
@@ -889,15 +940,15 @@ bool st_var_id() {
 
 }
 
-bool exp_list() {
+bool exp_list(name_and_data *types, int * num) {
     GET_NEXT_TOKEN();
-    if (!expr())
+    if (!expr(types, num))
         return false;
 
-    return next_exp();
+    return next_exp(types, num);
 }
 
-bool next_exp() {
+bool next_exp(name_and_data *types, int * num) {
 
     //TODO added else to next_exp predict, is it ok? yep
     if (TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) ||
@@ -909,10 +960,10 @@ bool next_exp() {
         return false;
     }
     GET_NEXT_TOKEN();
-    if (!expr())
+    if (!expr(types, num))
         return false;
 
-    return next_exp();
+    return next_exp(types,num);
 }
 
 bool option() {
@@ -928,8 +979,8 @@ bool option() {
  *         false if there is mistake
  *  Notes: Works separatedly from main rules, must be called by author
  */
-bool expr() {
-    //TODO dodělat pro input ID a kontrolu jejich typy + vyřešit problém s konecm expressionu a dojetím dalšího kw
+bool expr(name_and_data *types, int * num) {
+    //TODO dodělat kontroly typu, posouvat celou hodnotu? Hodně práce a debugu
 
     ERROR = parse_expr(token);
     if (ERROR == 0) {
@@ -1008,20 +1059,23 @@ sym_tab_datatype get_type_to_sym_type() {
 }
 
 // first id is check at call site
-bool id_list(data_type *var_type, int *var_num) {
+bool id_list(name_and_data *var_type, int *var_num) {
     if (!isvar(&scope, ID_NAME())) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
     sym_tab_item_t *item = scope_search(&scope, ID_NAME());
-    *var_type = create_data_type(item->data.return_data_types->datatype);
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, ID_NAME());
+    *var_type = create_name_data(item->data.return_data_types->datatype, name);
     (*var_num)++;
 
     GET_NEXT_TOKEN();
     return next_id(var_type, var_num);
 }
 
-bool next_id(data_type *var_type, int *var_num) {
+bool next_id(name_and_data *var_type, int *var_num) {
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL))
         return true;
     if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
@@ -1034,7 +1088,9 @@ bool next_id(data_type *var_type, int *var_num) {
         return false;
     }
     sym_tab_item_t *item = scope_search(&scope, ID_NAME());
-    *var_type = add_data_type(*var_type, item->data.return_data_types->datatype);
+    dynamic_string_t * name;
+    dyn_str_add_string(name, ID_NAME());
+    *var_type = create_name_data(item->data.return_data_types->datatype, name);
     (*var_num)++;
 
     GET_NEXT_TOKEN();
@@ -1076,4 +1132,14 @@ bool is_term() {
     }
     ERROR = SYNTAX_ERR;
     return false;
+}
+
+data_type name_to_type(name_and_data nameAndData){
+    data_type dataType = create_data_type(nameAndData->datatype);
+    nameAndData = nameAndData->next;
+    while(nameAndData != NULL){
+        dataType = add_data_type(dataType, nameAndData->datatype);
+        nameAndData = nameAndData->next;
+    }
+    return dataType;
 }
