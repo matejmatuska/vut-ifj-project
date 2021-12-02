@@ -40,6 +40,7 @@ typedef int sym_tab_count_t;
 typedef bool sym_tab_defined_t;
 typedef bool sym_tab_declared_t;
 typedef int num_of_params;
+typedef int num_of_returns;
 
 // linked list of data types
 typedef struct datatypes_list
@@ -51,6 +52,17 @@ typedef struct datatypes_list
 // linked list structure
 typedef struct datatypes_list *data_type;
 
+// linked list of dynamic string + data types
+typedef struct name_and_datatype
+{
+    sym_tab_datatype datatype;
+    dynamic_string_t *string;
+    struct name_and_datatype *next;
+} name_and_datatype;
+
+// linked list structure
+typedef struct name_and_datatype *name_and_data;
+
 // data of item in table
 typedef struct
 {
@@ -60,6 +72,7 @@ typedef struct
     sym_tab_defined_t defined;   // bool defined
     sym_tab_declared_t declared; // bool declared
     num_of_params params;        // number of parameters
+    num_of_returns returns;      // number of returns
 } sym_tab_data_t;
 
 // structure of item in table
@@ -88,14 +101,17 @@ size_t sym_tab_size(const sym_tab_t *t);                                // numbe
 sym_tab_item_t *sym_tab_find_in_table(sym_tab_t *t, sym_tab_key_t key); // find item in hassym_table
 sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key);      // create new item to add to symbol table
 // add data of function
-bool sym_tab_add_data_function(sym_tab_item_t *item, data_type return_data_types, data_type param_data_types, sym_tab_declared_t dec, sym_tab_defined_t def, int par);
+bool sym_tab_add_data_function(sym_tab_item_t *item, data_type return_data_types, data_type param_data_types, sym_tab_declared_t dec, sym_tab_defined_t def, int par,int ret);
 // add data of variable
 bool sym_tab_add_data_var(sym_tab_item_t *item, data_type return_data_types, sym_tab_declared_t dec, sym_tab_defined_t def);
-bool sym_tab_erase(sym_tab_t *t, sym_tab_key_t key);                        // delete item
-void sym_tab_for_each(const sym_tab_t *t, void (*f)(sym_tab_item_t *item)); // make action for every item in symbol table
-void sym_tab_clear(sym_tab_t *t);                                           // delete all items
-void sym_tab_free(sym_tab_t *t);                                            // destructor of symbol table
-data_type create_data_type(sym_tab_datatype first);                         // [linked list function] - first value of list of data types
-data_type add_data_type(data_type first, sym_tab_datatype value);           // [linked list function] - add more values to list of data types
-void delete_data_types(data_type *first);                                   // [linked list function] - delete all values from linked list of data types
-#endif                                                                      // SYMTABLE_H
+bool sym_tab_erase(sym_tab_t *t, sym_tab_key_t key);                           // delete item
+void sym_tab_for_each(const sym_tab_t *t, void (*f)(sym_tab_item_t *item));    // make action for every item in symbol table
+void sym_tab_clear(sym_tab_t *t);                                              // delete all items
+void sym_tab_free(sym_tab_t *t);                                               // destructor of symbol table
+data_type create_data_type(sym_tab_datatype first);                            // [linked list function] - first value of list of data types
+data_type add_data_type(data_type first, sym_tab_datatype value);              // [linked list function] - add more values to list of data types
+void delete_data_types(data_type *first);                                      // [linked list function] - delete all values from linked list of data types
+name_and_data create_name_data(sym_tab_datatype data, dynamic_string_t *name); // [linked list function 2] - first value of list of data types and names
+name_and_data add_name_data(name_and_data first, sym_tab_datatype data);       // [linked list function 2] - add more values to list of data types and names
+void delete_data_name(name_and_data *first);                                   // [linked list function 2] - delete all values from linked list of data types and names
+#endif

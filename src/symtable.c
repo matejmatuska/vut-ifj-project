@@ -65,7 +65,6 @@ data_type add_data_type(data_type first, sym_tab_datatype value)
 	return first;
 }
 
-
 /**
   * Delete all data types from list
 * @param data_type first -> list we want to delete
@@ -87,6 +86,70 @@ void delete_data_types(data_type *list)
 	*list = NULL;
 }
 
+/**
+  * Add first value to linked list of data types and names
+* @param sym_tab_datatype data -> first value of list
+*@param dynamic_string_t *name -> name of item
+  * @return linked list with first value
+*/
+
+name_and_data create_name_data(sym_tab_datatype data, dynamic_string_t *name)
+{
+	name_and_data new;
+	new = (name_and_data)malloc(sizeof(struct name_and_datatype));
+	new->datatype = data;
+	new->string = name;
+	new->next = NULL;
+	return new;
+}
+/**
+  * Add another value to linked list of data types and name
+*@param name_and_data first -> linked list of data types with our first data type
+* @param sym_tab_datatype data -> value we want to add
+  * @return linked list of data types
+*/
+name_and_data add_name_data(name_and_data first, sym_tab_datatype data)
+{
+	name_and_data new, p;
+	new = (name_and_data)malloc(sizeof(struct name_and_datatype));
+	new->next = NULL;
+	new->datatype = data;
+	new->string = first->string;
+
+	if (first == NULL)
+	{
+		first = new;
+	}
+	else
+	{
+		p = first;
+		while (p->next != NULL)
+		{
+			p = p->next;
+		}
+		p->next = new;
+	}
+	return first;
+}
+/**
+  * Delete all data types and names from list
+* @param name_and_data first -> list we want to delete
+  * @return nothing
+*/
+void delete_data_name(name_and_data *first)
+{
+	name_and_data current = *first;
+	name_and_data next;
+
+	while (current != NULL)
+	{
+		next = current->next;
+		free(current);
+		current = next;
+	}
+
+	*first = NULL;
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SYMBOL TABLE FUNCTIONS:
 
@@ -148,8 +211,9 @@ sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key)
 	new->data.return_data_types = NULL;
 	new->data.declared = false;
 	new->data.defined = false;
-	new->data.item_type = NIL;
+	new->data.item_type = HT_OTHERS;
 	new->data.params = 0;
+	new->data.returns = 0;
 	new->next = NULL;
 	if (new->key == NULL)
 	{
@@ -179,10 +243,11 @@ sym_tab_item_t *sym_tab_add_item(sym_tab_t *t, sym_tab_key_t key)
   * @param  sym_tab_defined_t def - defined
   * @param  sym_tab_declared_t dec - declared
   * @param  int par - number of parameters
+  * @param  int ret - number of returns
   * @return true if data were succesfuly added
 */
 
-bool sym_tab_add_data_function(sym_tab_item_t *item, data_type return_data_types, data_type param_data_types, sym_tab_declared_t dec, sym_tab_defined_t def, int par)
+bool sym_tab_add_data_function(sym_tab_item_t *item, data_type return_data_types, data_type param_data_types, sym_tab_declared_t dec, sym_tab_defined_t def, int par,int ret)
 {
 	if (!item)
 	{
@@ -194,6 +259,7 @@ bool sym_tab_add_data_function(sym_tab_item_t *item, data_type return_data_types
 	item->data.declared = dec;
 	item->data.defined = def;
 	item->data.params = par;
+	item->data.returns = ret;
 	return true;
 }
 
@@ -219,6 +285,7 @@ bool sym_tab_add_data_var(sym_tab_item_t *item, data_type return_data_types, sym
 	item->data.declared = dec;
 	item->data.defined = def;
 	item->data.params = 0;
+	item->data.returns = 0;
 	return true;
 }
 
@@ -375,6 +442,7 @@ sym_tab_t *sym_tab_move(sym_tab_t *from)
 				return NULL;
 			sym_tab_find_in_table(t, tmp->key)->key = sym_tab_find_in_table(from, tmp->key)->key;
 			sym_tab_find_in_table(t, tmp->key)->data.params = sym_tab_find_in_table(from, tmp->key)->data.params;
+			sym_tab_find_in_table(t, tmp->key)->data.returns = sym_tab_find_in_table(from, tmp->key)->data.returns;
 			sym_tab_find_in_table(t, tmp->key)->data.param_data_types = sym_tab_find_in_table(from, tmp->key)->data.param_data_types;
 			sym_tab_find_in_table(t, tmp->key)->data.return_data_types = sym_tab_find_in_table(from, tmp->key)->data.return_data_types;
 			sym_tab_find_in_table(t, tmp->key)->data.declared = sym_tab_find_in_table(from, tmp->key)->data.declared;
