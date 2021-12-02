@@ -74,9 +74,13 @@ bool st_while();
 
 bool st_return();
 
-bool st_fnc_id();
+bool fnc_id();
+
+bool st_fnc_id(data_type *var_type, int *var_num);
 
 bool st_var_id();
+
+bool st_next_var_id(data_type *types, int *num);
 
 bool option();
 
@@ -100,9 +104,9 @@ bool next_term();
 
 bool is_term();
 
-bool id_list();
+bool id_list(data_type *types, int *num);
 
-bool next_id();
+bool next_id(data_type *types, int *num);
 
 bool is_type_data();
 
@@ -157,7 +161,11 @@ bool body() {
     } else if (TOK_IS_KW(KW_FUNCTION)) {
         return fnc_def();
     } else if (token->type == TOKEN_TYPE_ID) {
-        return st_fnc_id();
+        if (isfunc(&scope, ID_NAME()) == true) {
+            return fnc_id();
+        }
+        ERROR = UNDEFINED_ERR;
+        return false;
     } else if (token->type == TOKEN_TYPE_EOF) {
         return true;
     }
@@ -195,12 +203,12 @@ bool fnc_def() {
 
 
     if (!param_list(&par_type,
-                    &par_num)) {     //Tu uvnitř bych potřeboval uložit nazvy id nebo rovnou dát do lašího rámce
+                    &par_num)) {
         return false;
     }
     if (!exist) {
         sym_tab_add_data_function(item, ret_type, par_type, true, true,
-                                  par_num);   //tu potřebuji ještě ukládat do globálního ramce
+                                  par_num);
     } else {
         while (par_type != NULL && item->data.param_data_types != NULL) {
             if (item->data.param_data_types->datatype == par_type->datatype) {
@@ -229,7 +237,7 @@ bool fnc_def() {
 
     if (!exist) {
         sym_tab_add_data_function(item, ret_type, par_type, true, true,
-                                  par_num); //tu potřebuji ještě ukládat do globálního ramce
+                                  par_num);
     } else {
         while (ret_type != NULL && item->data.return_data_types != NULL) {
             if (item->data.return_data_types->datatype == ret_type->datatype) {
@@ -247,10 +255,8 @@ bool fnc_def() {
 
     }
 
-    //jestli vytvořím scope tu nebo v st_listu je jedno
 
-
-    if (!st_list()) {//TODO předávání jména  typu parametrů
+    if (!st_list()) {
         return false;
     }
     if (!TOK_IS_KW(KW_END)) {
@@ -358,7 +364,6 @@ bool id_def() {
 
 }
 
-
 bool param_list(data_type *par_type, int *num) {
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
@@ -422,7 +427,6 @@ bool next_param(data_type *par_type, int *num) {
     return false;
 }
 
-
 /**
  * <ret-type-list> -> : <type> <next-type>
  */
@@ -478,19 +482,10 @@ bool st_list() {
             return false;
     } else if (TOK_IS_ID) {
 
-
-        //TODO
-        if (isfunc(&scope, ID_NAME())) {
-            if (!st_fnc_id()) {
-                ERROR = SYNTAX_ERR;
-                return false;
-            }
-        } else {
-            if (!st_var_id()) {
-//                    ERROR = SYNTAX_ERR;
-                return false;
-            }
+        if (!st_var_id()) {
+            return false;
         }
+
 
     } else {
         ERROR = SYNTAX_ERR;
@@ -513,6 +508,7 @@ bool st_local() {
     }
     sym_tab_item_t *item_to_add = NULL;
     data_type par_type = NULL;
+    int num = 0;
     //Zjistí zda se nejedná o redekleraci či redefinici
     if (SYM_FIND() != NULL) {
         ERROR = UNDEFINED_ERR;
@@ -541,7 +537,7 @@ bool st_local() {
         if (TOK_IS_ID) {
 
             if (isfunc(&scope, ID_NAME())) {
-                if (!st_fnc_id()) {
+                if (!st_fnc_id(&par_type, &num)) {
                     return false;
                 }
             } else {
@@ -636,10 +632,10 @@ bool st_return() {
 }
 
 //Can be Macro for better usage
-bool st_fnc_id() {
+bool fnc_id() {
     char *name = ID_NAME();
     sym_tab_item_t *item = scope_search(&scope, name);
-    if(item == NULL){
+    if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
@@ -653,78 +649,244 @@ bool st_fnc_id() {
     data_type par_typy = NULL;
     par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
-
-    for (int i = 0; i < item->data.params; i++) {
-        GET_NEXT_TOKEN();
-        if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
-            ERROR = PARAMETERS_ERR;
-            return false;
-        }
-
-
-
-        if (TOK_IS_ID) {
-            sym_tab_item_t *id = scope_search(&scope, ID_NAME());
-            if (id == NULL) {
-                ERROR = UNDEFINED_ERR;
+    if (item->data.params != 0) {
+        for (int i = 0; i < item->data.params; i++) {
+            GET_NEXT_TOKEN();
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+                ERROR = PARAMETERS_ERR;
                 return false;
-            } else {
-                if (!id->data.defined) {
+            }
+
+
+            if (TOK_IS_ID) {
+                sym_tab_item_t *id = scope_search(&scope, ID_NAME());
+                if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
                     return false;
+                } else {
+                    if (!id->data.defined) {
+                        ERROR = UNDEFINED_ERR;
+                        return false;
+                    }
+
+
+                    if (typ->datatype != id->data.return_data_types->datatype) {
+                        ERROR = TYPE_INCOMPATIBILITY_ERR;
+                        return false;
+                    }
                 }
-
-
-                if (typ->datatype != id->data.return_data_types->datatype) {
+            } else if (is_type_data()) {
+                if (get_type_to_sym_type() != typ->datatype) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
                 }
             }
-        } else  if (is_type_data()) {
-            if (get_type_to_sym_type() != typ->datatype) {
-                ERROR = TYPE_INCOMPATIBILITY_ERR;
+
+            typ = item->data.param_data_types->next;
+            GET_NEXT_TOKEN();
+
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1) {
+                break;
+            } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+                ERROR = PARAMETERS_ERR;
+                return false;
+            } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+                if (i == item->data.params - 1) {
+                    ERROR = PARAMETERS_ERR;
+                    return false;
+                }
+                continue;
+            } else {
+                ERROR = SYNTAX_ERR;
                 return false;
             }
         }
-
-                typ = item->data.param_data_types->next;
-                GET_NEXT_TOKEN();
-
-                if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1) {
-                    break;
-                } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
-                    ERROR = PARAMETERS_ERR;
-                    return false;
-                } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
-                    if (i == item->data.params - 1){
-                        ERROR = PARAMETERS_ERR;
-                        return false;
-                    }
-                    continue;
-                } else {
-                    ERROR = SYNTAX_ERR;
-                    return false;
-                }
+    } else {
+        GET_NEXT_TOKEN();
+        if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+            return true;
+        } else {
+            ERROR = PARAMETERS_ERR;
+            return false;
+        }
     }
+
+
     GET_NEXT_TOKEN();
     return true;
+}
+
+bool st_fnc_id(data_type *var_type, int *var_num) {
+    char *name = ID_NAME();
+    sym_tab_item_t *item = scope_search(&scope, name);
+    if (item == NULL) {
+        ERROR = UNDEFINED_ERR;
+        return false;
+    }
+    /*
+    if (var_num > item->data.returns) {
+        ERROR = PARAMETERS_ERR;
+        return false;
+    }else{
+        *var_num -= item->data.returns;
+    }
+    */
+//TODO doplnit podle toho, zda se na jedno přiřazení může volat více proměnných. Pokud ne tak se skotroluje počet returnu a počet požadovaných příkazů.
+    //Podle toho potom vyhodnotit návratové hodnoty
+    GET_NEXT_TOKEN();
+    if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+
+    // GET_NEXT_TOKEN();
+    data_type par_typy = NULL;
+    par_typy = item->data.param_data_types;
+    datatypes_list *typ = item->data.param_data_types;
+    if (item->data.params != 0) {
+        for (int i = 0; i < item->data.params; i++) {
+            GET_NEXT_TOKEN();
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+                ERROR = PARAMETERS_ERR;
+                return false;
+            }
+
+
+            if (TOK_IS_ID) {
+                sym_tab_item_t *id = scope_search(&scope, ID_NAME());
+                if (id == NULL) {
+                    ERROR = UNDEFINED_ERR;
+                    return false;
+                } else {
+                    if (!id->data.defined) {
+                        ERROR = UNDEFINED_ERR;
+                        return false;
+                    }
+
+
+                    if (typ->datatype != id->data.return_data_types->datatype) {
+                        ERROR = TYPE_INCOMPATIBILITY_ERR;
+                        return false;
+                    }
+                }
+            } else if (is_type_data()) {
+                if (get_type_to_sym_type() != typ->datatype) {
+                    ERROR = TYPE_INCOMPATIBILITY_ERR;
+                    return false;
+                }
+            }
+
+            typ = item->data.param_data_types->next;
+            GET_NEXT_TOKEN();
+
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1) {
+                break;
+            } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+                ERROR = PARAMETERS_ERR;
+                return false;
+            } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+                if (i == item->data.params - 1) {
+                    ERROR = PARAMETERS_ERR;
+                    return false;
+                }
+                continue;
+            } else {
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+        }
+    } else {
+        GET_NEXT_TOKEN();
+        if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+            return true;
+        } else {
+            ERROR = PARAMETERS_ERR;
+            return false;
+        }
+    }
+
+
+    GET_NEXT_TOKEN();
+    return true;
+}
+
+bool st_next_var_id(data_type *var_type, int *var_num) {
+    if (TOK_IS_KW(KW_END) || TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
+        TOK_IS_KW(KW_RETURN) || TOK_IS_ID) {
+        return true;
+    }
+
+    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+    GET_NEXT_TOKEN();
+    if (TOK_IS_ID) {
+        if (isfunc(&scope, ID_NAME())) {
+            if (!st_fnc_id(var_type, var_num)) {
+                return false;
+            }
+            GET_NEXT_TOKEN();
+        } else {
+            return expr();
+        }
+    } else if (is_type_data()) {
+        if (!expr()) {
+            ERROR = SYNTAX_ERR;
+            return false;
+        }
+    } else {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+    if (!st_next_var_id(var_type, var_num)) {
+        return false;
+    }
+    return true;
+
+
 }
 
 
 bool st_var_id() {
 
-    while (sym_tab_find_in_table(top_table(scope), ID_NAME()) != NULL) {
-        GET_NEXT_TOKEN();
-        if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
-            GET_NEXT_TOKEN();
-            //Poslat další token nebo to nechat na parseru?
-            ERROR = expr();
-            return true;
-        }
+    data_type var_type = NULL;
+    int var_num = 0;
 
+
+    if (!id_list(&var_type, &var_num)) {
+        return false;
     }
-    ERROR = SYNTAX_ERR;
-    return false;
+
+    if (!TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
+        ERROR = SYNTAX_ERR;
+    }
+
+    GET_NEXT_TOKEN();
+    if (TOK_IS_ID) {
+        if (isfunc(&scope, ID_NAME())) {
+            if (!st_fnc_id(&var_type, &var_num)) {
+                return false;
+            }
+            GET_NEXT_TOKEN();
+        } else {
+            return expr();
+        }
+    } else if (is_type_data()) {
+        if (!expr()) {
+            ERROR = SYNTAX_ERR;
+            return false;
+        }
+    } else {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+
+    if (!st_next_var_id(&var_type, &var_num)) {
+        return false;
+    }
+    return true;
+
 }
 
 bool exp_list() {
@@ -834,7 +996,7 @@ sym_tab_datatype get_datatype() {
     return NIL;
 }
 
-sym_tab_datatype get_type_to_sym_type(){
+sym_tab_datatype get_type_to_sym_type() {
     if (TOK_IS_TYPE(TOKEN_TYPE_INT))
         return INTEGER;
     else if (TOK_IS_TYPE(TOKEN_TYPE_DOUBLE))
@@ -846,19 +1008,37 @@ sym_tab_datatype get_type_to_sym_type(){
 }
 
 // first id is check at call site
-bool id_list() {
-    return next_id();
+bool id_list(data_type *var_type, int *var_num) {
+    if (!isvar(&scope, ID_NAME())) {
+        ERROR = UNDEFINED_ERR;
+        return false;
+    }
+    sym_tab_item_t *item = scope_search(&scope, ID_NAME());
+    *var_type = create_data_type(item->data.return_data_types->datatype);
+    (*var_num)++;
+
+    GET_NEXT_TOKEN();
+    return next_id(var_type, var_num);
 }
 
-bool next_id() {
-    GET_NEXT_TOKEN();
+bool next_id(data_type *var_type, int *var_num) {
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL))
         return true;
     if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    return next_id();
+    GET_NEXT_TOKEN();
+    if (!isvar(&scope, ID_NAME())) {
+        ERROR = UNDEFINED_ERR;
+        return false;
+    }
+    sym_tab_item_t *item = scope_search(&scope, ID_NAME());
+    *var_type = add_data_type(*var_type, item->data.return_data_types->datatype);
+    (*var_num)++;
+
+    GET_NEXT_TOKEN();
+    return next_id(var_type, var_num);
 }
 
 //TODO překopat na zjišťování správných parametrů
