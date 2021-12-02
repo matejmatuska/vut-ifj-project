@@ -98,4 +98,4 @@ void sym_tab_free(sym_tab_t *t);                                            // d
 data_type create_data_type(sym_tab_datatype first);                         // [linked list function] - first value of list of data types
 data_type add_data_type(data_type first, sym_tab_datatype value);           // [linked list function] - add more values to list of data types
 void delete_data_types(data_type *first);                                   // [linked list function] - delete all values from linked list of data types
-#endif                                                                      // __sym_tab_H__
+#endif                                                                      // SYMTABLE_H
