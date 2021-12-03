@@ -982,7 +982,7 @@ bool option() {
 bool expr(name_and_data *types, int * num) {
     //TODO dodělat kontroly typu, posouvat celou hodnotu? Hodně práce a debugu
 
-    ERROR = parse_expr(token);
+    ERROR = parse_expr(token, scope);
     if (ERROR == 0) {
         return true;
     }
