@@ -20,7 +20,7 @@ bool symbol_stack_insert_handle(symbol_stack_t *stack)
     // if the top symbol is non-terminal just push the handle
     if (stack->top && stack->top->type != S_NON_TERMINAL)
     {
-        symbol_stack_push(stack, S_HANDLE);
+        symbol_stack_push(stack, S_HANDLE, T_UNKNOWN);
         return true;
     }
 
@@ -85,7 +85,7 @@ void symbol_stack_init(symbol_stack_t *stack)
     stack->top = NULL;
 }
 
-bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym)
+bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym, data_type_t dtype)
 {
     symbol_t *new = malloc(sizeof(symbol_t));
     if (!new)
@@ -93,6 +93,7 @@ bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym)
         return false;
     }
     new->type = sym;
+    new->data_type = dtype;
     new->next = stack->top;
     stack->top = new;
     return true;
