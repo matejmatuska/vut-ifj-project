@@ -11,35 +11,35 @@
 
 // valid symbols
 typedef enum {
-    PLUS, // +
-    MINUS, // -
-    MULT, // *
-    DIV, // "/"
-    INT_DIV, // "//"
-    LEQ, // <=
-    LNE, // <
-    GEQ, // >=
-    GNE, // >
-    EQ, // ==
-    NEQ, // ~=
-    LEN, // #
-    CONCAT, // ..
-    L_PAREN, // (
-    R_PAREN, // )
-    ID, // IDENTIFIER
-    INT_LIT, // integer literal
-    NUM_LIT, // number literal
-    STR_LIT, // string literal
-    NIL, // nil
-    DOLLAR, // "$"
-    HANDLE, // handle
-    NON_TERMINAL // any non terminal symbol
+    S_PLUS, // +
+    S_MINUS, // -
+    S_MULT, // *
+    S_DIV, // "/"
+    S_INT_DIV, // "//"
+    S_LEQ, // <=
+    S_LNE, // <
+    S_GEQ, // >=
+    S_GNE, // >
+    S_EQ, // ==
+    S_NEQ, // ~=
+    S_LEN, // #
+    S_CONCAT, // ..
+    S_L_PAREN, // (
+    S_R_PAREN, // )
+    S_ID, // IDENTIFIER
+    S_INT_LIT, // integer literal
+    S_NUM_LIT, // number literal
+    S_STR_LIT, // string literal
+    S_NIL, // nil
+    S_DOLLAR, // "$"
+    S_HANDLE, // handle
+    S_NON_TERMINAL // any non terminal symbol
 } symbol_type_t;
 
 typedef enum data_type {
-    T_NONE,
+    T_UNKNOWN,
     T_BOOL,
-    T_INTEGER,
+    T_INT,
     T_NUMBER,
     T_STRING,
     T_NIL

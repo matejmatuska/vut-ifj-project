@@ -18,19 +18,19 @@ bool symbol_stack_insert_handle(symbol_stack_t *stack)
     }
 
     // if the top symbol is non-terminal just push the handle
-    if (stack->top && stack->top->type != NON_TERMINAL)
+    if (stack->top && stack->top->type != S_NON_TERMINAL)
     {
-        symbol_stack_push(stack, HANDLE);
+        symbol_stack_push(stack, S_HANDLE);
         return true;
     }
 
     // else find the first non-terminal
     symbol_t *iter = stack->top;
-    while (iter && iter->type == NON_TERMINAL)
+    while (iter && iter->type == S_NON_TERMINAL)
     {
         // if next symbol is terminal insert handle
         symbol_t *next = iter->next;
-        if (next && next->type != NON_TERMINAL)
+        if (next && next->type != S_NON_TERMINAL)
         {
             symbol_t *handle = malloc(sizeof(symbol_t));
             if (!handle)
@@ -38,7 +38,7 @@ bool symbol_stack_insert_handle(symbol_stack_t *stack)
                 //TODO
                 return false;
             }
-            handle->type = HANDLE;
+            handle->type = S_HANDLE;
 
             iter->next = handle;
             handle->next =next;
@@ -62,7 +62,7 @@ symbol_t *symbol_stack_top_to_handle(symbol_stack_t *stack, int *count)
     *count = 0;
 
     symbol_t *iter = stack->top;
-    while (iter && iter->type != HANDLE)
+    while (iter && iter->type != S_HANDLE)
     {
         (*count)++;
         iter = iter->next;
@@ -73,7 +73,7 @@ symbol_t *symbol_stack_top_to_handle(symbol_stack_t *stack, int *count)
 symbol_t *symbol_stack_top_terminal(symbol_stack_t *stack)
 {
     symbol_t *iter = stack->top;
-    while(iter && iter->type == NON_TERMINAL)
+    while(iter && iter->type == S_NON_TERMINAL)
     {
         iter = iter->next;
     }
