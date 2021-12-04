@@ -9,24 +9,42 @@ void get_target(FILE* file)
 	target = file;
 }
 
-void add_inst(char* inst)
+void code_gen_init()
 {
-	fprintf(target, "%s\n", inst);
+	dyn_str_init(&code);
 }
 
-void add_code(char* code)
+void code_gen_free()
 {
-	fprintf(target, "%s", code);
+	dyn_str_clear(&code);
+}
+
+void code_in_to_file()
+{
+	fprintf(target, "%s", code.s);
+}
+
+void add_code(char* inst)
+{
+	dyn_str_add_string(&code, inst);
 }
 
 void add_code_int(int integer)
 {
-	fprintf(target, "%d", integer);
+	
+	char tmp[40];
+	sprintf(tmp, "%d", integer);
+	dyn_str_add_string(&code, tmp);
+	
 }
 
 void add_code_float(float integer)
 {
-	fprintf(target, "%f", integer);
+	
+	char tmp[40];
+	sprintf(tmp, "%f", integer);
+	dyn_str_add_string(&code, tmp);
+	
 }
 
 void generate_start_of_the_func(char* func_id)
@@ -115,28 +133,28 @@ void generate_retval(int index, sym_tab_datatype type)
 
 void generate_assign_retval(int index, token_t* token)
 {
-	add_code("MOVE LF@retval"); add_code_int(index); generate_operator(token->type); add_code("\n");
+	add_code("MOVE LF@retval"); add_code_int(index); generate_operand(token); add_code("\n");
 }
 
-void generate_operator(token_t* operator)
+void generate_operand(token_t* operand)
 {
-	switch (operator->type)
+	switch (operand->type)
 	{
 	case TOKEN_TYPE_ID:
 		add_code(" LF@");
-		add_code(operator->attribute.string->s);
+		add_code(operand->attribute.string->s);
 		break;
 	case TOKEN_TYPE_INT:
 		add_code(" int@");
-		add_code_int(operator->attribute.integer_value);
+		add_code_int(operand->attribute.integer_value);
 		break;
 	case TOKEN_TYPE_STR:
 		add_code(" string@");
-		add_code(operator->attribute.string->s);
+		add_code(operand->attribute.string->s);
 		break;
 	case TOKEN_TYPE_DOUBLE:
 		add_code(" float@");
-		add_code_float(operator->attribute.double_value);
+		add_code_float(operand->attribute.double_value);
 		break;
 	}
 }
@@ -149,17 +167,17 @@ void generate_newframe()
 void generate_param_before_call(int index, token_t* param)
 {
 	add_code("DEFVAR TF@"); add_code_int(index); add_code("\n");
-	add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operator(param); add_code("\n");
+	add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operand(param); add_code("\n");
 }
 
 void generate_push(token_t* token)
 {
-	add_code("PUSHS"); generate_operator(token); add_code("\n");
+	add_code("PUSHS"); generate_operand(token); add_code("\n");
 }
 
 void generate_pop(token_t* token)
 {
-	add_code("POPS"); generate_operator(token); add_code("\n");
+	add_code("POPS"); generate_operand(token); add_code("\n");
 }
 
 void generate_declare_variable(char* var_id)
@@ -321,6 +339,29 @@ void generate_end_of_main()
 {
 	add_code("EXIT int@0\n");
 	add_code("#end of main\n");
+}
+
+void generate_start_of_if(int if_index)
+{
+	add_code("POPS GF@tmp1\n");
+	add_code("JUMPIFEQS end_if"); add_code_int(if_index); add_code(" GF@tmp1 bool@false\n");
+
+}
+
+void start_of_else(int else_index, int if_index)
+{
+	add_code("JUMP end_else"); add_code_int(else_index);
+	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
+}
+
+void end_of_else()
+{
+	add_code("LABEL end_else"); add_code_int(else_index); add_code("\n");
+}
+
+void generate_end_of_if(int if_index)
+{
+	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
 }
 
 void generate_operation(rule_t rule)
