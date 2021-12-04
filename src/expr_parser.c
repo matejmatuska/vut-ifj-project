@@ -47,31 +47,6 @@ static enum ops op_lookup[TABLE_SIZE][TABLE_SIZE] = {
     { H, H, H, H, H, H, E, H, E }
 };
 
-// parser grammar rules
-typedef enum {
-    NO_MATCH,  // symbol sequence on stack doesn't match any rule
-
-    E_PLUS_E,  // E -> E + E
-    E_MINUS_E, // E -> E - E
-    E_MUL_E,   // E -> E* E
-    E_DIV_E,   // E -> E / E
-    E_INT_DIV_E, // E -> E // E
-
-    E_EQ_E,  // E -> E == E
-    E_NEQ_E, // E -> E ~= E
-    E_LEQ_E, // E -> E <= E
-    E_LNE_E, // E -> E < E
-    E_GEQ_E, // E -> E >= E
-    E_GNE_E, // E -> E > E
-
-    LEN_E, // E -> #E
-    E_CONCAT_E, // E -> E .. E
-
-    LP_E_RP, // E -> (E)
-
-    VAL_TO_E, // E -> i
-} rule_t;
-
 // returns symbol's index in the lookup table
 static int get_lookup_index(symbol_type_t type)
 {
@@ -148,7 +123,8 @@ bool check_type_compat(data_type_t a, data_type_t b)
  * Reduces binary operator expression
  * @return error code
  */
-static int reduce_binary(symbol_t op1, symbol_t operator, symbol_t op2, data_type_t *res_type)
+static int reduce_binary(symbol_t op1, symbol_t operator,
+        symbol_t op2, data_type_t *res_type)
 {
     if (op1.data_type == T_NIL || op2.data_type == T_NIL)
         if (operator.type != S_EQ && operator.type != S_NEQ)
@@ -259,7 +235,9 @@ static int apply_rule(int count, symbol_t *symbols, data_type_t *res_type)
 
         case 3:
             // paren rule
-            if (s1->type == S_R_PAREN && s2->type == S_NON_TERMINAL && s3->type == S_L_PAREN)
+            if (s1->type == S_R_PAREN
+                    && s2->type == S_NON_TERMINAL
+                    &&s3->type == S_L_PAREN)
             {
                 if (s2->data_type == T_UNKNOWN)
                     return INCOMPATIBILITY_ERR;
@@ -347,27 +325,29 @@ symbol_type_t token_to_sym_type(token_t token)
  */
 data_type_t get_token_data_type(token_t token)
 {
+    if (token.type == TOKEN_TYPE_ID)
+    {
+        // adapt symtable api to our api
+        sym_tab_key_t key = token.attribute.string->s;
+        sym_tab_item_t *item = scope_search(&ststack, key);
+        if (!item)
+            return T_UNKNOWN; // the variable is not in defined
+
+        // convert symtable data type to our
+        sym_tab_datatype st_type = item->data.return_data_types->datatype;
+        switch (st_type) {
+            case INTEGER:
+                return T_INT;
+            case NUMBER:
+                return T_NUMBER;
+            case STRING:
+                return T_STRING;
+            case NIL:
+                return T_NIL;
+        }
+    }
+
     switch (token.type) {
-        case TOKEN_TYPE_ID:
-            {
-                // adapt symtable api to our api
-                sym_tab_key_t key = token.attribute.string->s;
-                sym_tab_item_t *item = scope_search(&ststack, key);
-                if (!item)
-                    return T_UNKNOWN; // the variable is not in defined
-                sym_tab_datatype st_data_type = item->data.return_data_types->datatype;
-                switch (st_data_type) {
-                    case INTEGER:
-                        return T_INT;
-                    case NUMBER:
-                        return T_NUMBER;
-                    case STRING:
-                        return T_STRING;
-                    case NIL:
-                        return T_NIL;
-                }
-            }
-            break;
         case TOKEN_TYPE_INT:
             return T_INT;
         case TOKEN_TYPE_DOUBLE:
