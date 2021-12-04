@@ -528,13 +528,13 @@ bool st_local() {
     dyn_str_init(name);
     dyn_str_add_string(name, ID_NAME());
 
+
     //Zjistí zda se nejedná o redekleraci či redefinici
     if (SYM_FIND() != NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
 
-    item_to_add = sym_tab_add_item(top_table(scope), ID_NAME());
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
         ERROR = SYNTAX_ERR;
@@ -549,7 +549,7 @@ bool st_local() {
 
     par_type = create_name_data(get_datatype(), name);
     data_type par_typ = name_to_type(par_type);
-    sym_tab_add_data_var(item_to_add, par_typ, true, false);
+
     num = 1;
 
     GET_NEXT_TOKEN();
@@ -584,9 +584,11 @@ bool st_local() {
             ERROR = SYNTAX_ERR;
             return false;
         }
+        item_to_add = sym_tab_add_item(top_table(scope), name->s);
         sym_tab_add_data_var(item_to_add, par_typ, true, true);
     } else {
-
+        item_to_add = sym_tab_add_item(top_table(scope), name->s);
+        sym_tab_add_data_var(item_to_add, par_typ, true, false);
     }
 
     return true;
