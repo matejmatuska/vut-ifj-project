@@ -59,6 +59,7 @@ void generate_end_of_the_func(char* func_id)
 	add_code("POPFRAME\n");
 	add_code("RETURN\n");
 	add_code("#end of the function "); add_code(func_id); add_code("\n");
+	add_code("\n");
 }
 
 void generate_call_of_the_func(char* func_id)
@@ -131,10 +132,23 @@ void generate_retval(int index, sym_tab_datatype type)
 	add_code("\n");
 }
 
-void generate_assign_retval(int index, token_t* token)
+
+void generate_assign_retval(int index)
 {
-	add_code("MOVE LF@retval"); add_code_int(index); generate_operand(token); add_code("\n");
+	/*
+	add_code("MOVE LF@retval"); add_code_int(index);
+	*/
+	add_code("POPS LF@retval"); add_code_int(index); add_code("\n");
 }
+
+/*
+void generate_assing_retval_from(token_t* token)
+{
+	
+	add_code(" LF@"); generate_operand(token); add_code("\n");
+	
+}
+*/
 
 void generate_operand(token_t* operand)
 {
@@ -166,7 +180,7 @@ void generate_newframe()
 
 void generate_param_before_call(int index, token_t* param)
 {
-	add_code("DEFVAR TF@"); add_code_int(index); add_code("\n");
+	add_code("DEFVAR TF@%"); add_code_int(index); add_code("\n");
 	add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operand(param); add_code("\n");
 }
 
@@ -344,7 +358,7 @@ void generate_end_of_main()
 void generate_start_of_if(int if_index)
 {
 	add_code("POPS GF@tmp1\n");
-	add_code("JUMPIFEQS end_if"); add_code_int(if_index); add_code(" GF@tmp1 bool@false\n");
+	add_code("JUMPIFEQ end_if"); add_code_int(if_index); add_code(" GF@tmp1 bool@false\n");
 
 }
 
