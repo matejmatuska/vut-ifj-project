@@ -452,7 +452,7 @@ static int check_end_of_expr()
  * @param stack symbol stack used by precedence analysis
  * @return error code
  */
-int analyze(token_t *token, symbol_stack_t *stack)
+int analyze(token_t *token, symbol_stack_t *stack, data_type_t *res_type)
 {
     if (!symbol_stack_push(stack, S_DOLLAR, T_UNKNOWN))
         return INTERNAL_ERR;
@@ -498,24 +498,19 @@ int analyze(token_t *token, symbol_stack_t *stack)
         top_term = symbol_stack_top_terminal(stack);
         curr_sym = token_to_sym_type(*token);
     }
+
+    *res_type = symbol_stack_top(stack)->data_type;
     return SYNTAX_OK;
 }
 
-/**
- * Runs the expression parser
- *
- * @param token the token handed from the main parser
- * @param st_stack symbol table stack
- * @return error code
- */
-int parse_expr(token_t *token, ST_stack *st_stack)
+int parse_expr(token_t *token, ST_stack *st_stack, data_type_t *res_type)
 {
     ststack = st_stack;
 
     symbol_stack_t stack;
     symbol_stack_init(&stack);
 
-    int result = analyze(token, &stack);
+    int result = analyze(token, &stack, res_type);
 
     symbol_stack_free(&stack);
     return result;

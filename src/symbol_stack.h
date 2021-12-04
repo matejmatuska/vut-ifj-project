@@ -36,7 +36,7 @@ typedef enum {
     S_NON_TERMINAL // any non terminal symbol
 } symbol_type_t;
 
-typedef enum data_type {
+typedef enum {
     T_UNKNOWN,
     T_BOOL,
     T_INT,
@@ -47,7 +47,7 @@ typedef enum data_type {
 
 typedef struct symbol {
     symbol_type_t type;
-    enum data_type data_type;
+    data_type_t data_type;
     struct symbol *next;
 } symbol_t;
 
