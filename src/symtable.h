@@ -4,7 +4,7 @@
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 // This is the optimal value because it creates the largest possible hash table size and limits hashing collisions
-#define MAX 5
+#define MAX  65535
 
 #include <string.h>
 #include <stdbool.h>
