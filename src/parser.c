@@ -9,6 +9,7 @@
 #include "dynamic_string.h"
 #include "symtable.h"
 #include "ST_stack.h"
+#include "symbol_stack.h"
 
 #include "error.h"
 
@@ -111,6 +112,7 @@ bool next_id(name_and_data *types, int *num);
 bool is_type_data();
 
 data_type name_to_type(name_and_data nameAndData);
+data_type_t sym_data_to_data_type (sym_tab_datatype data);
 
 int parse() {
     scope = init_ST_stack();
@@ -559,7 +561,6 @@ bool st_local() {
             }
         } else if (is_type_data()) {
             if (!expr(&par_type, &num)) {
-                ERROR = SYNTAX_ERR;
                 return false;
             }
         } else {
@@ -581,6 +582,10 @@ bool st_if() {
     /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
  * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
     name_and_data par_type = NULL;
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, "bool");
+    par_type = create_name_data(INTEGER, name);
     int num = 0;
     GET_NEXT_TOKEN();
     if (!expr(&par_type, &num))
@@ -623,6 +628,10 @@ bool st_while() {
     /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
      * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
     name_and_data par_type = NULL;
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, "bool");
+    par_type = create_name_data(INTEGER, name);
     int num = 0;
     GET_NEXT_TOKEN();
     if (!expr(&par_type, &num))
@@ -981,10 +990,27 @@ bool option() {
  */
 bool expr(name_and_data *types, int * num) {
     //TODO dodělat kontroly typu, posouvat celou hodnotu? Hodně práce a debugu
-
-    ERROR = parse_expr(token, scope);
-    if (ERROR == 0) {
+    if(*types == NULL){
         return true;
+    }
+    data_type_t typ;
+    (*types)->datatype;
+    ERROR = parse_expr(token, scope, &typ);
+    if (ERROR == 0) {
+        if(dyn_str_compare((*types)->string, "bool")){
+
+            *num -= 1;
+            return true;
+        }
+        if(typ == sym_data_to_data_type((*types)->datatype)){
+            *types = (*types)->next;
+
+            *num -= 1;
+            expr(types, num);
+            return true;
+        }
+        ERROR = TYPE_INCOMPATIBILITY_ERR;
+        return false;
     }
     return false;
 }
@@ -1088,7 +1114,7 @@ bool next_id(name_and_data *var_type, int *var_num) {
         return false;
     }
     sym_tab_item_t *item = scope_search(&scope, ID_NAME());
-    dynamic_string_t * name;
+    dynamic_string_t * name = NULL;
     dyn_str_add_string(name, ID_NAME());
     *var_type = create_name_data(item->data.return_data_types->datatype, name);
     (*var_num)++;
@@ -1142,4 +1168,19 @@ data_type name_to_type(name_and_data nameAndData){
         nameAndData = nameAndData->next;
     }
     return dataType;
+}
+
+data_type_t sym_data_to_data_type (sym_tab_datatype data){
+    switch (data) {
+        case INTEGER:
+            return T_INT;
+        case STRING:
+            return T_STRING;
+        case NUMBER:
+            return T_NUMBER;
+        case NIL:
+            return T_NIL;
+        default:
+            return T_BOOL;
+    }
 }
