@@ -493,7 +493,14 @@ int analyze(token_t *token, symbol_stack_t *stack, data_type_t *res_type)
                     break;
                 }
             case E: // error
-                return check_end_of_expr();
+                {
+                    int result = check_end_of_expr();
+                    if (result != SYNTAX_OK)
+                        return result;
+
+                    *res_type = symbol_stack_top(stack)->data_type;
+                    return SYNTAX_OK;
+                }
         }
         top_term = symbol_stack_top_terminal(stack);
         curr_sym = token_to_sym_type(*token);
