@@ -112,6 +112,6 @@ data_type create_data_type(sym_tab_datatype first);                            /
 data_type add_data_type(data_type first, sym_tab_datatype value);              // [linked list function] - add more values to list of data types
 void delete_data_types(data_type *first);                                      // [linked list function] - delete all values from linked list of data types
 name_and_data create_name_data(sym_tab_datatype data, dynamic_string_t *name); // [linked list function 2] - first value of list of data types and names
-name_and_data add_name_data(name_and_data first, sym_tab_datatype data);       // [linked list function 2] - add more values to list of data types and names
+name_and_data add_name_data(name_and_data first, sym_tab_datatype data, dynamic_string_t * name);       // [linked list function 2] - add more values to list of data types and names
 void delete_data_name(name_and_data *first);                                   // [linked list function 2] - delete all values from linked list of data types and names
 #endif

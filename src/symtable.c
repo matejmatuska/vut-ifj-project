@@ -108,13 +108,14 @@ name_and_data create_name_data(sym_tab_datatype data, dynamic_string_t *name)
 * @param sym_tab_datatype data -> value we want to add
   * @return linked list of data types
 */
-name_and_data add_name_data(name_and_data first, sym_tab_datatype data)
+name_and_data add_name_data(name_and_data first, sym_tab_datatype data, dynamic_string_t * name)
 {
 	name_and_data new, p;
 	new = (name_and_data)malloc(sizeof(struct name_and_datatype));
 	new->next = NULL;
 	new->datatype = data;
-	new->string = first->string;
+	new->string = name;
+
 
 	if (first == NULL)
 	{

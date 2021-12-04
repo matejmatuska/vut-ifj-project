@@ -16,7 +16,7 @@ function abc(a : integer, b : integer)
     if a + b > c then
             local d : string = "hello".."world"
         while a * (b + c) do
-            local a : integer = 13 + 5 - 10 * 5
+            local a : integer = 13 + 5 - 10 * 5 / 15
         end
     else end
 

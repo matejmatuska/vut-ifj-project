@@ -485,7 +485,9 @@ bool st_list() {
         if (!st_return())
             return false;
     } else if (TOK_IS_ID) {
-
+        if(isfunc(&scope, ID_NAME())){
+            fnc_id();
+        } else
         if (!st_var_id()) {
             return false;
         }
@@ -554,7 +556,12 @@ bool st_local() {
                     return false;
                 }
             } else if (isvar(&scope, ID_NAME())){
-                return expr(&par_type, &num);
+                if(!expr(&par_type, &num)){
+                    return false;
+                } else if (num > 0) {
+                    ERROR = SEMANTIC_ERR;
+                    return false;
+                }
             } else {
                 ERROR = UNDEFINED_ERR;
                 return false;
@@ -562,7 +569,10 @@ bool st_local() {
         } else if (is_type_data()) {
             if (!expr(&par_type, &num)) {
                 return false;
-            }
+            } else if (num > 0) {
+            ERROR = SEMANTIC_ERR;
+            return false;
+        }
         } else {
             ERROR = SYNTAX_ERR;
             return false;
@@ -586,10 +596,15 @@ bool st_if() {
     dyn_str_init(name);
     dyn_str_add_string(name, "bool");
     par_type = create_name_data(INTEGER, name);
-    int num = 0;
+    int num = 1;
     GET_NEXT_TOKEN();
-    if (!expr(&par_type, &num))
+    if (!expr(&par_type, &num)) {
         return false;
+    }  else if (num > 0) {
+        ERROR = SEMANTIC_ERR;
+        return false;
+    }
+
     if (!TOK_IS_KW(KW_THEN)) {
         ERROR = SYNTAX_ERR;
         return false;
@@ -632,10 +647,14 @@ bool st_while() {
     dyn_str_init(name);
     dyn_str_add_string(name, "bool");
     par_type = create_name_data(INTEGER, name);
-    int num = 0;
+    int num = 1;
     GET_NEXT_TOKEN();
-    if (!expr(&par_type, &num))
+    if (!expr(&par_type, &num)) {
         return false;
+    } else if (num > 0) {
+        ERROR = SEMANTIC_ERR;
+        return false;
+    }
     if (!TOK_IS_KW(KW_DO)) {
         ERROR = SYNTAX_ERR;
         return false;
@@ -888,11 +907,19 @@ bool st_next_var_id(name_and_data *var_type, int *var_num) {
             }
             GET_NEXT_TOKEN();
         } else {
-            return expr(var_type, var_num);
+            if (expr(var_type, var_num)){
+                if (*var_num > 0) {
+                    ERROR = SEMANTIC_ERR;
+                    return false;
+                }
+                return true;
+            } else return false;
         }
     } else if (is_type_data()) {
         if (!expr(var_type, var_num)) {
-            ERROR = SYNTAX_ERR;
+            return false;
+        } else if (*var_num > 0) {
+            ERROR = SEMANTIC_ERR;
             return false;
         }
     } else {
@@ -930,11 +957,18 @@ bool st_var_id() {
             }
             GET_NEXT_TOKEN();
         } else {
-            return expr(&var_type, &var_num);
+            if (!expr(&var_type, &var_num)) {
+                return false;
+            } else if (var_num > 0) {
+                ERROR = SEMANTIC_ERR;
+                return false;
+            }
         }
     } else if (is_type_data()) {
         if (!expr(&var_type, &var_num)) {
-            ERROR = SYNTAX_ERR;
+            return false;
+        } else if (var_num > 0) {
+            ERROR = SEMANTIC_ERR;
             return false;
         }
     } else {
@@ -951,8 +985,12 @@ bool st_var_id() {
 
 bool exp_list(name_and_data *types, int * num) {
     GET_NEXT_TOKEN();
-    if (!expr(types, num))
+    if (!expr(types, num)) {
         return false;
+    } else if (*num > 0) {
+        ERROR = SEMANTIC_ERR;
+        return false;
+    }
 
     return next_exp(types, num);
 }
@@ -969,8 +1007,12 @@ bool next_exp(name_and_data *types, int * num) {
         return false;
     }
     GET_NEXT_TOKEN();
-    if (!expr(types, num))
+    if (!expr(types, num)) {
         return false;
+    } else if (*num > 0) {
+        ERROR = SEMANTIC_ERR;
+        return false;
+    }
 
     return next_exp(types,num);
 }
@@ -989,28 +1031,52 @@ bool option() {
  *  Notes: Works separatedly from main rules, must be called by author
  */
 bool expr(name_and_data *types, int * num) {
-    //TODO dodělat kontroly typu, posouvat celou hodnotu? Hodně práce a debugu
-    if(*types == NULL){
+    //TODO dodělat podtyp nnumber a int
+
+  /*  if(*types == NULL ){
         return true;
+    }*/
+
+    if(TOK_IS_KW(KW_END) ||
+       TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
+       TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN)) {
+        return true;
+
+    } else if(TOK_IS_TYPE(TOKEN_TYPE_COLON)){
+        GET_NEXT_TOKEN();
     }
+
     data_type_t typ;
-    (*types)->datatype;
+    //generate variable and type
     ERROR = parse_expr(token, scope, &typ);
-    if (ERROR == 0) {
+
+    if (ERROR == 0 && *types != NULL) {
         if(dyn_str_compare((*types)->string, "bool")){
 
             *num -= 1;
             return true;
         }
-        if(typ == sym_data_to_data_type((*types)->datatype)){
+        if(typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)){
             *types = (*types)->next;
 
             *num -= 1;
-            expr(types, num);
+
+            if(!expr(types, num)){
+                return false;
+            }
+
             return true;
         }
         ERROR = TYPE_INCOMPATIBILITY_ERR;
         return false;
+    } else if (*types == NULL){
+        //generate nil
+        *num -= 1;
+        if(!expr(types, num)){
+            return false;
+        }
+
+        return true;
     }
     return false;
 }
@@ -1114,9 +1180,10 @@ bool next_id(name_and_data *var_type, int *var_num) {
         return false;
     }
     sym_tab_item_t *item = scope_search(&scope, ID_NAME());
-    dynamic_string_t * name = NULL;
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
     dyn_str_add_string(name, ID_NAME());
-    *var_type = create_name_data(item->data.return_data_types->datatype, name);
+    *var_type = add_name_data(*var_type, item->data.return_data_types->datatype, name);
     (*var_num)++;
 
     GET_NEXT_TOKEN();
