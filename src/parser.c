@@ -47,6 +47,8 @@ int ERROR = 0;
 
 ST_stack *scope = NULL;
 
+sym_tab_item_t * act_fnc = NULL;
+
 sym_tab_datatype get_datatype();
 
 int program();
@@ -123,6 +125,7 @@ int parse() {
 
     free(token);
     free_ST_stack(&scope);
+
     return result;
 }
 
@@ -172,6 +175,8 @@ bool body() {
         return false;
     } else if (token->type == TOKEN_TYPE_EOF) {
         return true;
+    } else {
+        ERROR = SYNTAX_ERR;
     }
     return false;
 }
@@ -258,7 +263,7 @@ bool fnc_def() {
         }
 
     }
-
+    act_fnc = item;
 
     if (!st_list()) {
         return false;
@@ -267,7 +272,9 @@ bool fnc_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    GET_NEXT_TOKEN();
+
+
+
     pop(&scope);
 
     if (!body())
@@ -589,8 +596,7 @@ bool st_local() {
  * <statement> -> if <expr> then <st-list> else <st-list> end
  */
 bool st_if() {
-    /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
- * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
+
     name_and_data par_type = NULL;
     dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);
@@ -598,10 +604,41 @@ bool st_if() {
     par_type = create_name_data(INTEGER, name);
     int num = 1;
     GET_NEXT_TOKEN();
-    if (!expr(&par_type, &num)) {
+ /*   if (!expr(&par_type, &num)) {
         return false;
     }  else if (num > 0) {
         ERROR = SEMANTIC_ERR;
+        return false;
+    }
+    */
+
+    if (TOK_IS_ID) {
+
+        if (isfunc(&scope, ID_NAME())) {
+            if (!st_fnc_id(&par_type, &num)) {
+                return false;
+            }
+        } else if (isvar(&scope, ID_NAME())){
+            if(!expr(&par_type, &num)){
+                return false;
+            } else if (num > 0) {
+                ERROR = SEMANTIC_ERR;
+                return false;
+            }
+        } else {
+            ERROR = UNDEFINED_ERR;
+            return false;
+        }
+    } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LENGTH) || TOK_IS_OP() ||
+    TOK_IS_KW(KW_NIL) || TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        if (!expr(&par_type, &num)) {
+            return false;
+        } else if (num > 0) {
+            ERROR = SEMANTIC_ERR;
+            return false;
+        }
+    } else {
+        ERROR = SYNTAX_ERR;
         return false;
     }
 
@@ -640,8 +677,6 @@ bool st_if() {
  * <statement> -> while <expr> do <st-list> end
  */
 bool st_while() {
-    /*TODO zjistit co bude potřebovat exp-parser a možná vytvořit speciální typ n apodmínky -> pokud nao tak přidat tento
-     * typ do par_type  dát number na 1. Pokud ne tam vytvořit druhou verzi expr bez parametrů*/
     name_and_data par_type = NULL;
     dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);
@@ -649,12 +684,43 @@ bool st_while() {
     par_type = create_name_data(INTEGER, name);
     int num = 1;
     GET_NEXT_TOKEN();
-    if (!expr(&par_type, &num)) {
+  /*  if (!expr(&par_type, &num)) {
         return false;
     } else if (num > 0) {
         ERROR = SEMANTIC_ERR;
         return false;
+    } */
+
+    if (TOK_IS_ID) {
+
+        if (isfunc(&scope, ID_NAME())) {
+            if (!st_fnc_id(&par_type, &num)) {
+                return false;
+            }
+        } else if (isvar(&scope, ID_NAME())){
+            if(!expr(&par_type, &num)){
+                return false;
+            } else if (num > 0) {
+                ERROR = SEMANTIC_ERR;
+                return false;
+            }
+        } else {
+            ERROR = UNDEFINED_ERR;
+            return false;
+        }
+    } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LENGTH) || TOK_IS_OP() ||
+               TOK_IS_KW(KW_NIL) || TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+        if (!expr(&par_type, &num)) {
+            return false;
+        } else if (num > 0) {
+            ERROR = SEMANTIC_ERR;
+            return false;
+        }
+    } else {
+        ERROR = SYNTAX_ERR;
+        return false;
     }
+
     if (!TOK_IS_KW(KW_DO)) {
         ERROR = SYNTAX_ERR;
         return false;
@@ -675,11 +741,24 @@ bool st_while() {
 }
 
 bool st_return() {
-    //TODO asi kontrolu
+    //TODO možná udělat vlastní expression vyhodnovač, kvuli absenci jmen pro generaci (možná paramy?) -> poradit se
     name_and_data var_type = NULL;
+    sym_tab_item_t * fnc = act_fnc;
+
     int var_num = 0;
-    if (!exp_list(&var_type, &var_num))
+    while (fnc->data.return_data_types != NULL){
+        fnc->data.return_data_types = fnc->data.return_data_types->next;
+        var_num += 1;
+    }
+    if (!exp_list(&var_type, &var_num)){
         return false;
+    }
+    //gen return
+    while (var_num > 0) {
+        //gen_nil
+        var_num -= 1;
+    }
+
 
     //TODO GET_NEXT_TOKEN();
     return true;
@@ -1039,9 +1118,9 @@ bool expr(name_and_data *types, int * num) {
 
     if(TOK_IS_KW(KW_END) ||
        TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
-       TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN)) {
+       TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN) || TOK_IS_KW(KW_GLOBAL) ||
+       TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF)) {
         return true;
-
     } else if(TOK_IS_TYPE(TOKEN_TYPE_COLON)){
         GET_NEXT_TOKEN();
     }
