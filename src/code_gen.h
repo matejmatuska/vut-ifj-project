@@ -60,6 +60,11 @@ void generate_default_variable_value(sym_tab_datatype type);
 void generate_operand(token_t* operand);
 void generate_operation(rule_t rule);
 
+void generate_start_of_if(int if_index);
+void generate_start_of_else(int else_index, int if_index);
+void generate_end_of_else(int else_index);
+void generate_end_of_if(int if_index);
+
 void generate_push(token_t* token);
 void generate_pop(token_t* token);
 void generate_declare_variable(char* var_id);
