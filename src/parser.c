@@ -858,7 +858,7 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t * item, int *var_num)
     }else{
         name_and_data tmp_name = *var_type;
         data_type tmp_type = item->data.return_data_types;
-        while (tmp_name != NULL){
+        while (tmp_name != NULL && tmp_type != NULL){
             if(tmp_type->datatype != tmp_name->datatype){
                 ERROR = PARAMETERS_ERR;
                 return false;
@@ -1134,6 +1134,10 @@ bool expr(name_and_data *types, int * num) {
     if (ERROR == 0 && *types != NULL) {
         if(dyn_str_compare((*types)->string, "bool")){
 
+            *num -= 1;
+            return true;
+        }
+        if(TOK_IS_ID){
             *num -= 1;
             return true;
         }
