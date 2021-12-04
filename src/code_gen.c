@@ -348,13 +348,13 @@ void generate_start_of_if(int if_index)
 
 }
 
-void start_of_else(int else_index, int if_index)
+void generate_start_of_else(int else_index, int if_index)
 {
-	add_code("JUMP end_else"); add_code_int(else_index);
+	add_code("JUMP end_else"); add_code_int(else_index); add_code("\n");
 	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
 }
 
-void end_of_else()
+void generate_end_of_else(int else_index)
 {
 	add_code("LABEL end_else"); add_code_int(else_index); add_code("\n");
 }
