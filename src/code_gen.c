@@ -4,6 +4,9 @@
 #include "scanner.h"
 #include "symtable.h"
 
+FILE* target;
+dynamic_string_t code;
+
 void get_target(FILE* file)
 {
 	target = file;
@@ -150,6 +153,28 @@ void generate_assing_retval_from(token_t* token)
 }
 */
 
+dynamic_string_t* convert_string(char* string)
+{
+	dynamic_string_t* tmp = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+	dyn_str_init(tmp);
+	int i = 0;
+	while (string[i] != '\0')
+	{
+		if (string[i] == ' ')
+		{
+			dyn_str_add_string(tmp, "\\032");
+		}
+		else if(string[i] == '\n')
+		{
+			dyn_str_add_string(tmp, "\\010");
+		}
+		else
+			dyn_str_add_character(tmp, string[i]);
+		i++;
+	}
+	return tmp;
+}
+
 void generate_operand(token_t* operand)
 {
 	switch (operand->type)
@@ -164,11 +189,14 @@ void generate_operand(token_t* operand)
 		break;
 	case TOKEN_TYPE_STR:
 		add_code(" string@");
-		add_code(operand->attribute.string->s);
+		dynamic_string_t* tmp = convert_string(operand->attribute.string->s);
+		add_code(tmp->s);
+		dyn_str_free(tmp);
 		break;
 	case TOKEN_TYPE_DOUBLE:
-		add_code(" float@");
+		add_code(" float@0x");
 		add_code_float(operand->attribute.double_value);
+		add_code("p+0");
 		break;
 	}
 }
@@ -176,6 +204,16 @@ void generate_operand(token_t* operand)
 void generate_newframe()
 {
 	add_code("CREATEFRAME\n");
+}
+
+void generate_param_for_write(token_t* param)
+{
+	add_code("PUSHS LF@"); add_code(param->attribute.string->s); add_code("\n");
+}
+
+void generate_number_of_params(int params_amount)
+{
+	add_code("PUSHS int@"); add_code_int(params_amount); add_code("\n");
 }
 
 void generate_param_before_call(int index, token_t* param)
@@ -296,6 +334,22 @@ void generate_function_tointeger()
 	generate_end_of_the_func("tointeger");
 }
 
+void generate_function_write()
+{
+	add_code("LABEL write\n");
+	add_code("POPS GF@tmp1\n");
+	add_code("LABEL loop2\n");
+	add_code("GT GF@tmp2 GF@tmp1 int@0\n");
+	add_code("JUMPIFEQ end_loop2 GF@tmp2 bool@false \n");
+	add_code("POPS GF@tmp2\n");
+	add_code("SUB GF@tmp1 GF@tmp1 int@1\n");
+	add_code("WRITE GF@tmp2\n");
+	add_code("JUMP loop2\n");
+	add_code("LABEL end_loop2\n");
+
+	generate_end_of_the_func("write");
+}
+
 void generate_function_readn()
 {
 	generate_start_of_the_func("readn");
@@ -322,6 +376,7 @@ void generate_function_reads()
 
 void generate_built_in_funcs()
 {
+	generate_function_write();
 	generate_function_reads();
 	generate_function_readi();
 	generate_function_readn();
@@ -337,8 +392,8 @@ void generate_program_head()
 	add_code(".IFJcode21\n");
 	add_code("DEFVAR GF@tmp1\n");
 	add_code("DEFVAR GF@tmp2\n");
-	add_code("DEFVAR GF@tmp3\n");
 	add_code("JUMP main\n");
+	add_code("\n");
 	generate_built_in_funcs();
 }
 
@@ -351,8 +406,25 @@ void generate_start_of_main()
 
 void generate_end_of_main()
 {
+	add_code("CLEARS\n");
 	add_code("EXIT int@0\n");
 	add_code("#end of main\n");
+}
+
+void generate_start_of_while_head(int while_index)
+{
+	add_code("LABEL while"); add_code_int(while_index); add_code("\n");
+}
+
+void generate_start_of_while(int while_index)
+{
+	add_code("POPS GF@tmp1\n");
+	add_code("JUMPIFEQ end_while"); add_code_int(while_index); add_code(" GF@tmp1 bool@false\n");
+}
+
+void generate_end_of_while(int while_index)
+{
+	add_code("LABEL end_while"); add_code_int(while_index); add_code("\n");
 }
 
 void generate_start_of_if(int if_index)
@@ -401,13 +473,49 @@ void generate_operation(rule_t rule)
 		add_code("EQS");
 		break;
 	case E_NEQ_E:
-		add_code("EQS"); add_code("\n"); 
+		add_code("EQS"); add_code("\n");
 		add_code("NOTS");
 		break;
 	case E_LEQ_E:
-		
+		add_code("POPS GF@tmp1\n");
+		add_code("POPS GF@tmp2\n");
+		add_code("PUSHS GF@tmp2\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("EQS\n");
+		add_code("PUSHS GF@tmp2\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("LTS\n");
+		add_code("ORS\n");
+		break;
+	case E_LNE_E:
+		add_code("LTS");
+		break;
+	case E_GEQ_E:
+		add_code("POPS GF@tmp1\n");
+		add_code("POPS GF@tmp2\n");
+		add_code("PUSHS GF@tmp2\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("EQS\n");
+		add_code("PUSHS GF@tmp2\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("GTS\n");
+		add_code("ORS\n");
 		break;
 
+	case E_GNE_E:
+		add_code("GTS");
+		break;
+	case LEN_E:
+		add_code("POPS GF@tmp1\n");
+		add_code("STRLEN GF@tmp1 GF@tmp1\n");
+		add_code("PUSHS  GF@tmp1\n");
+		break;
+	case E_CONCAT_E:
+		add_code("POPS GF@tmp1\n");
+		add_code("POPS GF@tmp2\n");
+		add_code("CONCAT GF@tmp1 GF@tmp2 GF@tmp1\n");
+		add_code("PUSHS GF@tmp1\n");
+		break;
 	}
 	add_code("\n");
 }
