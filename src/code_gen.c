@@ -70,7 +70,15 @@ void generate_call_of_the_func(char* func_id)
 	add_code("CALL "); add_code(func_id); add_code("\n");
 }
 
-void generate_type_check_before_asign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type)
+void generate_type_check_before_asign(sym_tab_datatype from_type, sym_tab_datatype to_type)
+{
+	if (from_type == INTEGER && to_type == NUMBER)
+	{
+		add_code("INT2FLOATS\n");//converts from_type to FLOAT
+	}
+}
+
+void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type)
 {
 	if (from_type == INTEGER && to_type == NUMBER)
 	{
@@ -82,22 +90,24 @@ void generate_type_check_before_asign(int index, sym_tab_datatype from_type, cha
 	}
 }
 
-void generate_type_check_before_operation(char* var_id1, sym_tab_datatype type1, char* var_id2, sym_tab_datatype type2)
+void generate_type_check_before_operation(sym_tab_datatype type1, sym_tab_datatype type2)
 {
 	if (type1 == NUMBER && type2 == INTEGER)
 	{
-		add_code("INT2FLOAT LF@"); add_code(var_id2); add_code(" LF%"); add_code(var_id2); add_code("\n");
+		add_code("INT2FLOATS\n");
 	}
 	else if (type1 == INTEGER && type2 == NUMBER)
 	{
-		add_code("INT2FLOAT LF@"); add_code(var_id1); add_code(" LF%"); add_code(var_id1); add_code("\n");
+		add_code("POPS GF@tmp1\n");
+		add_code("INT2FLOATS \n");
+		add_code("PUSHS GF@tmp1\n");
 	}
 }
 
 void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type)
 {
 	
-	generate_type_check_before_asign(index, from_type, var_id, to_type);
+	generate_type_check_before_asign_retval(index, from_type, to_type);
 	add_code("MOVE LF@"); add_code(var_id); add_code(" TF@retval"); add_code_int(index); add_code("\n");
 }
 
@@ -197,6 +207,10 @@ void generate_operand(token_t* operand)
 		add_code(" float@0x");
 		add_code_float(operand->attribute.double_value);
 		add_code("p+0");
+		break;
+	case TOKEN_TYPE_KW:
+		if (operand->attribute.keyword == KW_NIL)
+			add_code(" nil@nil");
 		break;
 	}
 }
@@ -392,7 +406,12 @@ void generate_program_head()
 	add_code(".IFJcode21\n");
 	add_code("DEFVAR GF@tmp1\n");
 	add_code("DEFVAR GF@tmp2\n");
+	add_code("DEFVAR GF@tmp3\n");
 	add_code("JUMP main\n");
+	add_code("\n");
+	add_code("LABEL error_label\n");
+	add_code("CLEARS\n");
+	add_code("EXIT int@8\n");
 	add_code("\n");
 	generate_built_in_funcs();
 }
@@ -450,33 +469,76 @@ void generate_end_of_if(int if_index)
 	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
 }
 
+void generate_nil_check()
+{
+	add_code("POPS GF@tmp1\n");
+	add_code("TYPE GF@tmp3 GF@tmp1\n");
+	add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+	add_code("POPS GF@tmp2\n");
+	add_code("TYPE GF@tmp3 GF@tmp2\n");
+	add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+	add_code("PUSHS GF@tmp2\n");
+	add_code("PUSHS GF@tmp1\n");
+}
+
 void generate_operation(rule_t rule)
 {
 	switch (rule)
 	{
 	case E_PLUS_E:
-		add_code("ADS ");
+		generate_nil_check();
+
+		add_code("ADDS\n");
 		break;
 	case E_MINUS_E:
-		add_code("SUBS ");
+		generate_nil_check();
+
+		add_code("SUBS\n");
 		break;
 	case E_MUL_E:
-		add_code("MULS");
+		generate_nil_check();
+
+		add_code("MULS\n");
 		break;
 	case E_DIV_E:
-		add_code("DIV");
+		generate_nil_check();
+
+		add_code("POPS GF@tmp1\n");
+		add_code("JUMPIFNEQ next_label GF@tmp1 float@0x0p+0\n");
+		add_code("CLEARS \n");
+		add_code("EXIT int@9\n");
+		add_code("LABEL next_label\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("DIVS\n");
 		break;
 	case E_INT_DIV_E:
-		add_code("IDIV");
+		generate_nil_check();
+
+		add_code("POPS GF@tmp1\n");
+		add_code("JUMPIFNEQ next_label GF@tmp1 int@0\n");
+		add_code("CLEARS \n");
+		add_code("EXIT int@9\n");
+		add_code("LABEL next_label\n");
+		add_code("INT2FLOATS\n");
+		add_code("PUSHS GF@tmp1\n");
+		add_code("INT2FLOATS\n");
+		add_code("DIVS\n");
+		add_code("FLOAT2INTS\n");
 		break;
 	case E_EQ_E:
-		add_code("EQS");
+		generate_nil_check();
+
+		add_code("EQS\n");
 		break;
 	case E_NEQ_E:
-		add_code("EQS"); add_code("\n");
-		add_code("NOTS");
+		generate_nil_check();
+
+		add_code("EQS\n"); add_code("\n");
+		add_code("NOTS\n");
 		break;
 	case E_LEQ_E:
+		generate_nil_check();
+
 		add_code("POPS GF@tmp1\n");
 		add_code("POPS GF@tmp2\n");
 		add_code("PUSHS GF@tmp2\n");
@@ -488,9 +550,13 @@ void generate_operation(rule_t rule)
 		add_code("ORS\n");
 		break;
 	case E_LNE_E:
+		generate_nil_check();
+
 		add_code("LTS");
 		break;
 	case E_GEQ_E:
+		generate_nil_check();
+
 		add_code("POPS GF@tmp1\n");
 		add_code("POPS GF@tmp2\n");
 		add_code("PUSHS GF@tmp2\n");
@@ -503,14 +569,24 @@ void generate_operation(rule_t rule)
 		break;
 
 	case E_GNE_E:
-		add_code("GTS");
+		generate_nil_check();
+
+		add_code("GTS\n");
 		break;
 	case LEN_E:
+		
+		add_code("POPS GF@tmp1\n");
+		add_code("TYPE GF@tmp3 GF@tmp1\n");
+		add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+		add_code("PUSHS GF@tmp1\n");
+		
 		add_code("POPS GF@tmp1\n");
 		add_code("STRLEN GF@tmp1 GF@tmp1\n");
 		add_code("PUSHS  GF@tmp1\n");
 		break;
 	case E_CONCAT_E:
+		generate_nil_check();
+
 		add_code("POPS GF@tmp1\n");
 		add_code("POPS GF@tmp2\n");
 		add_code("CONCAT GF@tmp1 GF@tmp2 GF@tmp1\n");
