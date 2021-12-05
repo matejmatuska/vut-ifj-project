@@ -10,6 +10,7 @@
 #include "symtable.h"
 #include "ST_stack.h"
 #include "symbol_stack.h"
+#include "code_gen.h"
 
 #include "error.h"
 
@@ -51,6 +52,12 @@ sym_tab_item_t * act_fnc = NULL;
 
 sym_tab_datatype get_datatype();
 
+int if_index = 0;
+
+int else_index = 0;
+
+int while_index = 0;
+
 int program();
 
 bool body();
@@ -77,6 +84,10 @@ bool st_while();
 
 bool st_return();
 
+bool ret_expr(data_type *types, int * num, int num_of_ret);
+
+bool next_retype(data_type *types, int *num);
+
 bool fnc_id();
 
 bool st_fnc_id(name_and_data *var_type, int *var_num);
@@ -89,9 +100,9 @@ bool option();
 
 bool expr(name_and_data *types, int * num);
 
-bool exp_list(name_and_data *types, int * num);
+bool exp_list(data_type *types, int * num);
 
-bool next_exp(name_and_data *types, int * num);
+bool next_exp(data_type *types, int * num, int * num_of_ret);
 
 bool type_list(data_type *types, int *num);
 
@@ -120,12 +131,16 @@ int parse() {
     scope = init_ST_stack();
     token = malloc(sizeof(token_t));
     token_init(token);
+    get_target(stdout);
+
+    code_gen_init();
 
     int result = program();
 
     free(token);
     free_ST_stack(&scope);
-
+    code_in_to_file();
+    code_gen_free();
     return result;
 }
 
@@ -133,7 +148,6 @@ int parse() {
 int program() {
 
     GET_NEXT_TOKEN();
-
     if (!TOK_IS_KW(KW_REQUIRE)) {
         ERROR = SYNTAX_ERR;
         return ERROR;
@@ -145,7 +159,9 @@ int program() {
         ERROR = SYNTAX_ERR;
         return ERROR;
     }
+    generate_program_head();
     push(&scope);
+    generate_newframe();
     if (!body())
         return ERROR;
 
@@ -200,7 +216,7 @@ bool fnc_def() {
             exist = true;
         }
     }
-
+    generate_start_of_the_func(ID_NAME());
     push(&scope);
 
     GET_NEXT_TOKEN();
@@ -234,6 +250,9 @@ bool fnc_def() {
         }
 
     }
+
+
+
 //    GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
         ERROR = SYNTAX_ERR;
@@ -385,6 +404,8 @@ bool param_list(data_type *par_type, int *num) {
         return false;
     }
     sym_tab_item_t *item;
+    (*num)++;
+    generate_func_param_assign(ID_NAME(), *num);
     item = sym_tab_add_item(top_table(scope), ID_NAME());
 
     GET_NEXT_TOKEN();
@@ -396,7 +417,7 @@ bool param_list(data_type *par_type, int *num) {
     if (!is_type())
         return false;
     *par_type = create_data_type(get_datatype());
-    (*num)++;
+
     sym_tab_add_data_var(item, create_data_type(get_datatype()), true, false);
 
 
@@ -419,6 +440,7 @@ bool next_param(data_type *par_type, int *num) {
     if (!TOK_IS_ID)
         return false;
 
+    generate_func_param_assign(ID_NAME(), *num);
     sym_tab_item_t *item;
     item = sym_tab_add_item(top_table(scope), ID_NAME());
 
@@ -459,11 +481,32 @@ bool ret_type_list(data_type *ret_type, int *num) {
         return false;
     *ret_type = create_data_type(get_datatype());
     (*num)++;
+    generate_retval(*num, get_datatype());
 
-    if (next_type(ret_type, num))
+    if (next_retype(ret_type, num))
         return true;
 
     return false;
+
+}
+
+bool next_retype(data_type *types, int *num) {
+    GET_NEXT_TOKEN();
+    if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) || TOK_IS_KW(KW_GLOBAL) || TOK_IS_KW(KW_FUNCTION) || TOK_IS_KW(KW_END) ||
+        TOK_IS_TYPE(TOKEN_TYPE_EOF) || TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
+        TOK_IS_KW(KW_RETURN) || TOK_IS_ID)
+        return true;
+    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+    GET_NEXT_TOKEN();
+    if (!is_type())
+        return false;
+    *types = add_data_type(*types, get_datatype());
+    (*num)++;
+    generate_retval(*num, get_datatype());
+    return next_type(types, num);
 
 }
 
@@ -605,6 +648,9 @@ bool st_if() {
     dyn_str_add_string(name, "bool");
     par_type = create_name_data(INTEGER, name);
     int num = 1;
+    if_index += 1;
+    int local_if_index = if_index;
+
     GET_NEXT_TOKEN();
  /*   if (!expr(&par_type, &num)) {
         return false;
@@ -649,28 +695,37 @@ bool st_if() {
         return false;
     }
     GET_NEXT_TOKEN();
+
+    generate_start_of_if(local_if_index);
     push(&scope);
-    if (!st_list()) {
-        pop(&scope);
-        return false;
-    }
-    pop(&scope);
-    if (!TOK_IS_KW(KW_ELSE)) {
-        ERROR = SYNTAX_ERR;
-        return false;
-    }
-    GET_NEXT_TOKEN();
-    push(&scope);
+
     if (!st_list()) {
         pop(&scope);
         return false;
     }
 
     pop(&scope);
+    if (!TOK_IS_KW(KW_ELSE)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+
+    generate_start_of_else(local_if_index, local_if_index);
+    GET_NEXT_TOKEN();
+    push(&scope);
+    generate_newframe();
+    if (!st_list()) {
+        pop(&scope);
+        return false;
+    }
+    generate_end_of_else(local_if_index);
+
+    pop(&scope);
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         return false;
     }
+    generate_end_of_if(if_index);
     GET_NEXT_TOKEN();
     return true;
 }
@@ -685,6 +740,10 @@ bool st_while() {
     dyn_str_add_string(name, "bool");
     par_type = create_name_data(INTEGER, name);
     int num = 1;
+    while_index += 1;
+
+    int local_while_index = while_index;
+    generate_start_of_while_head(local_while_index);
     GET_NEXT_TOKEN();
   /*  if (!expr(&par_type, &num)) {
         return false;
@@ -729,6 +788,9 @@ bool st_while() {
     }
     GET_NEXT_TOKEN();
     push(&scope);
+    generate_start_of_while(local_while_index);
+
+
     if (!st_list()) {
         pop(&scope);
         return false;
@@ -738,33 +800,80 @@ bool st_while() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+    generate_end_of_while(local_while_index);
     GET_NEXT_TOKEN();
     return true;
 }
 
 bool st_return() {
     //TODO možná udělat vlastní expression vyhodnovač, kvuli absenci jmen pro generaci (možná paramy?) -> poradit se
-    name_and_data var_type = NULL;
+    data_type var_type = NULL;
     sym_tab_item_t * fnc = act_fnc;
 
-    int var_num = 0;
-    while (fnc->data.return_data_types != NULL){
+    int var_num = fnc->data.returns;
+ /*   while (fnc->data.return_data_types != NULL){
         fnc->data.return_data_types = fnc->data.return_data_types->next;
         var_num += 1;
-    }
-    if (!exp_list(&var_type, &var_num)){
-        return false;
-    }
-    //gen return
-    while (var_num > 0) {
-        //gen_nil
-        var_num -= 1;
-    }
+    } */
+    var_type = act_fnc->data.return_data_types;
+        if (!exp_list(&var_type, &var_num)){
+            return false;
+        }
+
+
 
 
     //TODO GET_NEXT_TOKEN();
     return true;
 }
+
+bool ret_expr(data_type *types, int * num, int num_of_ret) {
+    //TODO dělat věci jako správně returny
+    if(TOK_IS_KW(KW_END) ||
+       TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
+       TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN) || TOK_IS_KW(KW_GLOBAL) ||
+       TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF)) {
+        return true;
+    } else if(TOK_IS_TYPE(TOKEN_TYPE_COLON)){
+        GET_NEXT_TOKEN();
+    }
+
+    data_type_t typ;
+    //generate variable and type
+
+    ERROR = parse_expr(token, scope, &typ);
+
+    if (ERROR == 0 && *types != NULL) {
+        if(TOK_IS_ID){
+            *num -= 1;
+            return true;
+        }
+        if(typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)){
+            *types = (*types)->next;
+
+            *num -= 1;
+
+            if(!ret_expr(types, num, num_of_ret)){
+                return false;
+            }
+
+            return true;
+        }
+        ERROR = TYPE_INCOMPATIBILITY_ERR;
+        return false;
+    } else if (*types == NULL){
+        //generate nil
+        *num -= 1;
+        if(!ret_expr(types, num, num_of_ret)){
+            return false;
+        }
+
+        return true;
+    }
+    return false;
+}
+
+
 
 //Can be Macro for better usage
 bool fnc_id() {
@@ -1015,7 +1124,6 @@ bool st_next_var_id(name_and_data *var_type, int *var_num) {
 
 }
 
-
 bool st_var_id() {
 
     name_and_data var_type = NULL;
@@ -1064,19 +1172,36 @@ bool st_var_id() {
 
 }
 
-bool exp_list(name_and_data *types, int * num) {
+bool exp_list(data_type *types, int * num) {
     GET_NEXT_TOKEN();
-    if (!expr(types, num)) {
+    int num_of_ret = 0;
+    data_type_t typ;
+    if (parse_expr(token, scope,  &typ) != 0) {
         return false;
-    } else if (*num > 0) {
-        ERROR = SEMANTIC_ERR;
-        return false;
+    } else if ((*types) != NULL) {
+        if(typ != sym_data_to_data_type((*types)->datatype)) {
+            ERROR = TYPE_INCOMPATIBILITY_ERR;
+            return false;
+        } else if (num_of_ret < *num){
+            num_of_ret += 1;
+            generate_assign_retval(num_of_ret);
+        }
+    } else if (num_of_ret < *num){
+        num_of_ret += 1;
+        generate_assign_retval(num_of_ret);
     }
 
-    return next_exp(types, num);
+    if(!next_exp(types, num, &num_of_ret)) {
+        return false;
+    }
+    if( *num > num_of_ret){
+        ERROR = PARAMETERS_ERR;
+        return false;
+    }
+    return true;
 }
 
-bool next_exp(name_and_data *types, int * num) {
+bool next_exp(data_type *types, int * num, int * num_of_ret) {
 
     //TODO added else to next_exp predict, is it ok? yep
     if (TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) || TOK_IS_KW(KW_RETURN) ||
@@ -1088,14 +1213,23 @@ bool next_exp(name_and_data *types, int * num) {
         return false;
     }
     GET_NEXT_TOKEN();
-    if (!expr(types, num)) {
+    data_type_t typ;
+    if (parse_expr(token, scope,  &typ) != 0) {
         return false;
-    } else if (*num > 0) {
-        ERROR = SEMANTIC_ERR;
-        return false;
+    } else if ((*types) != NULL) {
+        if(typ != sym_data_to_data_type((*types)->datatype)) {
+            ERROR = TYPE_INCOMPATIBILITY_ERR;
+            return false;
+        } else if (*num_of_ret < *num){
+            *num_of_ret += 1;
+            generate_assign_retval(*num_of_ret);
+        }
+    } else if (*num_of_ret < *num){
+        *num_of_ret += 1;
+        generate_assign_retval(*num_of_ret);
     }
 
-    return next_exp(types,num);
+    return next_exp(types, num, num_of_ret);
 }
 
 bool option() {
