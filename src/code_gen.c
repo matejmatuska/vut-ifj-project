@@ -421,11 +421,14 @@ void generate_program_head()
 void generate_start_of_program()
 {
 	add_code("LABEL __MAIN__\n");
+	add_code("CREATEFRAME\n");
+	add_code("PUSHFRAME\n");
 	
 }
 
 void generate_end_of_program()
 {
+	add_code("POPFRAME\n");
 	add_code("CLEARS\n");
 	add_code("EXIT int@0\n");
 }
