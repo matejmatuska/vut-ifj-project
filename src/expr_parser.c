@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -8,6 +9,7 @@
 #include "ST_stack.h"
 #include "error.h"
 #include "symtable.h"
+#include "code_gen.h"
 
 ST_stack *ststack = NULL;
 
@@ -228,7 +230,7 @@ static int apply_rule(int count, symbol_t *symbols, data_type_t *res_type)
                     return UNDEFINED_ERR;
 
                 //TODO generate code for string length
-                *res_type = s1->data_type;
+                *res_type = T_INT;
                 return SYNTAX_OK;
             }
             return SYNTAX_ERR;
@@ -459,6 +461,12 @@ int analyze(token_t *token, symbol_stack_t *stack, data_type_t *res_type)
 
                 if (!symbol_stack_push(stack, curr_sym, data_type))
                     return INTERNAL_ERR;
+
+                if (curr_sym == S_INT_LIT || curr_sym == S_STR_LIT
+                        || curr_sym == S_NUM_LIT || curr_sym == S_ID)
+                {
+                    generate_push(token);
+                }
 
                 if(get_next_token(token) == LEX_ERR)
                     return LEX_ERR;
