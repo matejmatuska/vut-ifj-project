@@ -322,7 +322,7 @@ int get_next_token(token_t* current_token)
                 }
                 if (!dyn_str_init(value))
                 {
-                    error(LEX_ERR, value)
+                   return INTERNAL_ERR;
                 }
             }
             else if (c == '+')
@@ -358,7 +358,7 @@ int get_next_token(token_t* current_token)
                 }
                 if (!dyn_str_init(value))
                 {
-                    error(LEX_ERR, value)
+                    return INTERNAL_ERR;
                 }
 
                 dyn_str_add_character(value, c);
@@ -374,7 +374,7 @@ int get_next_token(token_t* current_token)
                 }
                 if (!dyn_str_init(value))
                 {
-                    error(LEX_ERR, value)
+                    return INTERNAL_ERR;
                 }
 
                 dyn_str_add_character(value, c);
