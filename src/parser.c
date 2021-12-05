@@ -164,6 +164,7 @@ int program() {
     generate_program_head();
     push(&scope);
     generate_explicit_fnc();
+
     generate_newframe();
     if (!body())
         return ERROR;
@@ -638,6 +639,7 @@ bool st_local() {
         item_to_add = sym_tab_add_item(top_table(scope), name->s);
         sym_tab_add_data_var(item_to_add, par_typ, true, false);
     }
+    free(name);
 
     return true;
 }
@@ -890,7 +892,7 @@ bool write(sym_tab_item_t *item){
             return false;
         }
         GET_NEXT_TOKEN();
-        while (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)){
+        while (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
             index++;
             if(is_term()){
                 generate_param_before_call(index, token);
@@ -899,12 +901,16 @@ bool write(sym_tab_item_t *item){
                 return false;
             }
             GET_NEXT_TOKEN();
+            if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
+                continue;
+            }
             if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)){
                 ERROR = SYNTAX_ERR;
                 return false;
             }
         }
         generate_call_of_the_func("write");
+        GET_NEXT_TOKEN();
         return true;
     } else {
         return false;
@@ -1540,51 +1546,56 @@ data_type_t sym_data_to_data_type (sym_tab_datatype data){
     }
 }
 
- void generate_explicit_fnc(){
-     data_type typ = create_data_type(STRING);
+void generate_explicit_fnc(){
 
+     data_type typ_reads = create_data_type(STRING);
      sym_tab_item_t *reads = NULL;
      reads = sym_tab_add_item(top_table(scope), "reads");
-     sym_tab_add_data_function(reads, typ, NULL, true, true, 0, 1);
+     sym_tab_add_data_function(reads, typ_reads, NULL, true, true, 0, 1);
 
-     typ = create_data_type(INTEGER);
+     data_type typ_readi = create_data_type(INTEGER);
      sym_tab_item_t *readi = NULL;
      readi = sym_tab_add_item(top_table(scope), "readi");
-     sym_tab_add_data_function(readi, typ, NULL, true, true, 0, 1);
+     sym_tab_add_data_function(readi, typ_readi, NULL, true, true, 0, 1);
 
-     typ = create_data_type(NUMBER);
+     data_type typ_readn = create_data_type(NUMBER);
      sym_tab_item_t *readn = NULL;
      readn = sym_tab_add_item(top_table(scope), "readn");
-     sym_tab_add_data_function(readn, typ, NULL, true, true, 0, 1);
+     sym_tab_add_data_function(readn, typ_readn, NULL, true, true, 0, 1);
 
 
      sym_tab_item_t *write = NULL;
      write = sym_tab_add_item(top_table(scope), "write");
      sym_tab_add_data_function(write, NULL, NULL, true, true, 0, 1);
 
-     data_type par = create_data_type(STRING);
+     data_type par_tointiger = create_data_type(NUMBER);
+     data_type typ_tointiger = create_data_type(INTEGER);
      sym_tab_item_t *tointeger = NULL;
      tointeger = sym_tab_add_item(top_table(scope), "tointeger");
-     sym_tab_add_data_function(tointeger, typ, par, true, true, 1, 1);
+     sym_tab_add_data_function(tointeger, typ_tointiger, par_tointiger, true, true, 1, 1);
 
-     par = create_data_type(STRING);
-     par = add_data_type(typ, NUMBER);
-     par = add_data_type(typ, NUMBER);
+
+     data_type par_substr = create_data_type( STRING);
+     par_substr = add_data_type(par_substr, NUMBER);
+    par_substr = add_data_type(par_substr, NUMBER);
      sym_tab_item_t *substr = NULL;
+     data_type typ_substr = create_data_type(STRING);
      substr = sym_tab_add_item(top_table(scope), "substr");
-     sym_tab_add_data_function(substr, typ, par, true, true, 3, 1);
+     sym_tab_add_data_function(substr, typ_substr, par_substr, true, true, 3, 1);
 
-     par = create_data_type(STRING);
-     par = add_data_type(typ, INTEGER);
-     typ = create_data_type(INTEGER);
+     data_type par_ord = create_data_type(STRING);
+     par_ord = add_data_type(par_ord, INTEGER);
+     data_type typ_ord = create_data_type(INTEGER);
      sym_tab_item_t *ord = NULL;
      ord = sym_tab_add_item(top_table(scope), "ord");
-     sym_tab_add_data_function(ord, typ, par, true, true, 2, 1);
+     sym_tab_add_data_function(ord, typ_ord, par_ord, true, true, 2, 1);
 
-     par = create_data_type(INTEGER);
-     typ = create_data_type(STRING);
+     data_type par_chr = create_data_type(INTEGER);
+     data_type typ_chr = create_data_type(STRING);
      sym_tab_item_t *chr = NULL;
      chr = sym_tab_add_item(top_table(scope), "chr");
-     sym_tab_add_data_function(chr, typ, par, true, true, 1, 1);
+     sym_tab_add_data_function(chr, typ_chr, par_chr, true, true, 1, 1);
+
+
 
 }
