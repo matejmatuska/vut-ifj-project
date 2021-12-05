@@ -50,10 +50,6 @@ void generate_assign_retval(int index); //generates retval assign
 void generate_end_of_the_func(char* func_id);// generates the end of the function
 //
 
-//
-void generate_start_of_main();//generates the start of the main func
-//
-
 //pass parameter for function write
 void generate_param_for_write(token_t* param);
 void generate_number_of_params(int params_amount);
@@ -69,7 +65,8 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 //
 
 //
-void generate_end_of_main();// generates the end of the main func
+void generate_start_of_program();
+void generate_end_of_program();// generates the end of the main func
 //
 
 //expresion generation

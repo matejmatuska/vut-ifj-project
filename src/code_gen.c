@@ -409,7 +409,7 @@ void generate_program_head()
 	add_code("DEFVAR GF@tmp1\n");
 	add_code("DEFVAR GF@tmp2\n");
 	add_code("DEFVAR GF@tmp3\n");
-	add_code("JUMP main\n");
+	add_code("JUMP __MAIN__\n");
 	add_code("\n");
 	add_code("LABEL error_label\n");
 	add_code("CLEARS\n");
@@ -418,18 +418,16 @@ void generate_program_head()
 	generate_built_in_funcs();
 }
 
-void generate_start_of_main()
+void generate_start_of_program()
 {
-	add_code("LABEL main\n");
-	add_code("CREATEFRAME\n");
-	add_code("PUSHFRAME\n");
+	add_code("LABEL __MAIN__\n");
+	
 }
 
-void generate_end_of_main()
+void generate_end_of_program()
 {
 	add_code("CLEARS\n");
 	add_code("EXIT int@0\n");
-	add_code("#end of main\n");
 }
 
 void generate_start_of_while_head(int while_index)
