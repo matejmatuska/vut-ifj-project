@@ -1130,6 +1130,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             }
             generate_call_of_the_func(name->s);
             dyn_str_free(name);
+            GET_NEXT_TOKEN();
             return true;
         } else {
             ERROR = PARAMETERS_ERR;
@@ -1215,7 +1216,6 @@ bool st_var_id() {
             if (!st_fnc_id(&var_type, &var_num)) {
                 return false;
             }
-            GET_NEXT_TOKEN();
             return true;
         } else {
             if (!expr(&var_type, &var_num)) {
