@@ -7,10 +7,8 @@
 #include <stdbool.h>
 
 FILE *source;
-bool success = false;
-//dynamic_string_t *dynamic_string;
 
-// all possible states of FSM
+// all possible states of Final State Machine
 
 #define START_STATE 300 //f
 #define MINUS_STATE 301 //F
@@ -51,26 +49,39 @@ bool success = false;
 #define COMPARING_STATE 336     //F
 #define EOF_STATE 337           //F
 #define COLON_STATE 338         //F
-#define DOT_STATE 339           //F
+#define DOT_STATE 339           
 #define DOUBLE_DOT_STATE 340     //F
 
+// error MACRO
 #define error(type, value) \
     dyn_str_free(value);\
     return type;
 
 
-//set source file
+/**
+  *Set source
+* @param FILE *file -> specific file or stdin
+  * @return nothing
+*/
 void get_source(FILE *file)
 {
     source = file;
 }
-
+/**
+  *Initialization of token
+* @param token_t *token -> token to be initialized
+  * @return nothing
+*/
 void token_init(token_t* token)
 {
     token->type = TOKEN_TYPE_INT;
     token->attribute.integer_value = 0;
 }
-
+/**
+  *Free function for token
+* @param token_t *token -> token to be freed
+  * @return nothing
+*/
 void token_free(token_t* token)
 {
     //dyn_str_free if the token type is ID or STRING
@@ -85,7 +96,12 @@ void token_free(token_t* token)
     }
     token->type = TOKEN_TYPE_INT;
 }
-
+/**
+  *Function for making number from dynamic string
+* @param token_t *token -> current token
+* @param dynamic_string_t *value -> possible number
+  * @return 0 if correct
+*/
 int make_number(token_t *token, dynamic_string_t *value)
 {
     if (token->type == TOKEN_TYPE_INT)
@@ -96,7 +112,12 @@ int make_number(token_t *token, dynamic_string_t *value)
     dyn_str_free(value);
     return 0;
 }
-
+/**
+  *Function for making string from dynamic string
+* @param token_t *token -> current token
+* @param dynamic_string_t *value -> possible string
+  * @return 0 if correct and 1 if incorrect
+*/
 int make_string(token_t *token, dynamic_string_t *value)
 {
 
@@ -130,21 +151,28 @@ int make_string(token_t *token, dynamic_string_t *value)
                 memcpy(substring, &(value->s)[i + 1], 3);
                 substring[3] = '\0';
                 int ascii = atoi(substring);
-                if (ascii < 0 || ascii>255)
+                if (ascii < 1 || ascii>255)
                 {
-                    error(LEX_ERR, value)
+                    return 1;
                 }
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
                 dyn_str_del_character(value, i);
                 value->s[i] = ascii;
             }
+        
         }
     }
         token->attribute.string = value;
         
     return 0;
 }
+/**
+  *Function for making id or keyword from dynamic string
+* @param token_t *token -> current token
+* @param dynamic_string_t *value -> possible id or kw
+  * @return 0 if correct
+*/
 int make_id_or_kw(token_t *token, dynamic_string_t *value)
 {
     
@@ -247,7 +275,11 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     return 0;
 }
 
-//main function , switch
+/**
+ *Function for obtaining next token with all his parameters
+* @param token_t *token -> current token
+ * @return 0 if correct , otherwise return value of LEX_ERROR
+*/
 int get_next_token(token_t* current_token)
 {
 
@@ -286,7 +318,7 @@ int get_next_token(token_t* current_token)
                 if (value == NULL)
                 {
                     fprintf(stderr, "Allocation error\n");
-                    return 0;
+                    return INTERNAL_ERR;
                 }
                 if (!dyn_str_init(value))
                 {
@@ -322,7 +354,7 @@ int get_next_token(token_t* current_token)
                 if (value == NULL)
                 {
                     fprintf(stderr, "Allocation error\n");
-                    return 0;
+                    return INTERNAL_ERR;
                 }
                 if (!dyn_str_init(value))
                 {
@@ -338,7 +370,7 @@ int get_next_token(token_t* current_token)
                 if (value == NULL)
                 {
                     fprintf(stderr, "Allocation error\n");
-                    return 0;
+                    return INTERNAL_ERR;
                 }
                 if (!dyn_str_init(value))
                 {
@@ -573,7 +605,7 @@ int get_next_token(token_t* current_token)
             break;
 
         case ASCII_SECOND_VALUE_STATE:
-            if (('0' <= c) && (c <= '5'))
+            if (('0' <= c) && (c <= '9'))
             {
                 dyn_str_add_character(value, c);
                 state = ASCII_THIRD_VALUE_STATE;
@@ -585,7 +617,7 @@ int get_next_token(token_t* current_token)
             break;
 
         case ASCII_THIRD_VALUE_STATE:
-            if (('0' <= c) && (c <= '5'))
+            if (('0' <= c) && (c <= '9'))
             {
                 dyn_str_add_character(value, c);
                 state = START_OF_STRING_STATE;
@@ -597,10 +629,17 @@ int get_next_token(token_t* current_token)
             break;
 
         case STRING_STATE:
-            current_token->type = TOKEN_TYPE_STR;
-            ungetc(c,source);
-            make_string(current_token, value);
+           
+            if(make_string(current_token, value)==0)
+            {
+                current_token->type = TOKEN_TYPE_STR;
+                ungetc(c,source);
                 return 0;
+            }
+            else
+            {
+                error(LEX_ERR,value)
+            }
             break;
 
         case MUL_STATE:
