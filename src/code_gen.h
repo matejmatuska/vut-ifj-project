@@ -1,3 +1,6 @@
+#ifndef CODE_GENERATOR_H
+#define CODE_GENERATOR_H
+
 #include "dynamic_string.h"
 #include <stdio.h>
 #include "scanner.h"
@@ -47,25 +50,23 @@ void generate_assign_retval(int index); //generates retval assign
 void generate_end_of_the_func(char* func_id);// generates the end of the function
 //
 
-//
-void generate_start_of_main();//generates the start of the main func
-//
-
 //pass parameter for function write
 void generate_param_for_write(token_t* param);
 void generate_number_of_params(int params_amount);
 //
 
-//call of the function 
+//pass parameter for general function 
 void generate_newframe(); // generates newframe before passing the parametrs of the function
 void generate_param_before_call(int index, token_t* param); //generates parameter pass before call
 
+//call of the function and asign of the return values
 void generate_call_of_the_func(char* func_id); // calls the function
 void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type); //generates the assign of the retval 
 //
 
 //
-void generate_end_of_main();// generates the end of the main func
+void generate_start_of_program();
+void generate_end_of_program();// generates the end of the main func
 //
 
 //expresion generation
@@ -77,8 +78,8 @@ void generate_operation(rule_t rule);//generates the operation according the rul
 //
 
 //type check generation
-void generate_type_check_before_asign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type);
-void generate_type_check_before_operation(char* var_id1, sym_tab_datatype type1, char* var_id2, sym_tab_datatype type2);
+void generate_type_check_before_asign(sym_tab_datatype from_type, sym_tab_datatype to_type);
+void generate_type_check_before_operation(sym_tab_datatype type1, sym_tab_datatype type2);
 //
 
 //if generation
@@ -107,8 +108,8 @@ void generate_default_variable_value(sym_tab_datatype type);
 void add_code(char* inst);
 void add_code_int(int integer);
 void add_code_float(float integer);
-void generate_operand(token_t* operand);;
+void generate_operand(token_t* operand);
+void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type);
+void generate_nil_check();
 //
-
-
-
+#endif 
