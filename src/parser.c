@@ -62,6 +62,8 @@ int program();
 
 bool body();
 
+void generate_explicit_fnc();
+
 bool fnc_def();
 
 bool glob_def();
@@ -161,6 +163,7 @@ int program() {
     }
     generate_program_head();
     push(&scope);
+    generate_explicit_fnc();
     generate_newframe();
     if (!body())
         return ERROR;
@@ -218,7 +221,7 @@ bool fnc_def() {
     }
     generate_start_of_the_func(ID_NAME());
     push(&scope);
-
+    generate_explicit_fnc();
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
         ERROR = SYNTAX_ERR;
@@ -875,16 +878,56 @@ bool ret_expr(data_type *types, int * num, int num_of_ret) {
     return false;
 }
 
+bool write(sym_tab_item_t *item){
+    sym_tab_key_t write = "write";
+
+    if(strcmp((char *)item->key, "write") == 0) {
+        generate_newframe();
+        int index = 0;
+        GET_NEXT_TOKEN();
+        if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
+            ERROR = SYNTAX_ERR;
+            return false;
+        }
+        GET_NEXT_TOKEN();
+        while (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)){
+            index++;
+            if(is_term()){
+                generate_param_before_call(index, token);
+            } else {
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+            GET_NEXT_TOKEN();
+            if(!TOK_IS_TYPE(TOKEN_TYPE_COLON)){
+                ERROR = SYNTAX_ERR;
+                return false;
+            }
+        }
+        generate_call_of_the_func("write");
+        return true;
+    } else {
+        return false;
+    }
+
+}
 
 
-//Can be Macro for better usage
 bool fnc_id() {
-    char *name = ID_NAME();
-    sym_tab_item_t *item = scope_search(&scope, name);
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, ID_NAME());
+    sym_tab_item_t *item = scope_search(&scope, name->s);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
+    if(write(item)){
+        return true;
+    } else if (ERROR != 0) {
+        return false;
+    }
+
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
         ERROR = SYNTAX_ERR;
@@ -952,7 +995,7 @@ bool fnc_id() {
     } else {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
-            generate_call_of_the_func(name);
+            generate_call_of_the_func(name->s);
             GET_NEXT_TOKEN();
             return true;
         } else {
@@ -960,7 +1003,7 @@ bool fnc_id() {
             return false;
         }
     }
-    generate_call_of_the_func(name);
+    generate_call_of_the_func(name->s);
 
     GET_NEXT_TOKEN();
     return true;
@@ -997,6 +1040,11 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     sym_tab_item_t *item = scope_search(&scope, name->s);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
+        return false;
+    }
+
+    if(write(item)){
+        ERROR = PARAMETERS_ERR;
         return false;
     }
 
@@ -1490,4 +1538,53 @@ data_type_t sym_data_to_data_type (sym_tab_datatype data){
         default:
             return T_BOOL;
     }
+}
+
+ void generate_explicit_fnc(){
+     data_type typ = create_data_type(STRING);
+
+     sym_tab_item_t *reads = NULL;
+     reads = sym_tab_add_item(top_table(scope), "reads");
+     sym_tab_add_data_function(reads, typ, NULL, true, true, 0, 1);
+
+     typ = create_data_type(INTEGER);
+     sym_tab_item_t *readi = NULL;
+     readi = sym_tab_add_item(top_table(scope), "readi");
+     sym_tab_add_data_function(readi, typ, NULL, true, true, 0, 1);
+
+     typ = create_data_type(NUMBER);
+     sym_tab_item_t *readn = NULL;
+     readn = sym_tab_add_item(top_table(scope), "readn");
+     sym_tab_add_data_function(readn, typ, NULL, true, true, 0, 1);
+
+
+     sym_tab_item_t *write = NULL;
+     write = sym_tab_add_item(top_table(scope), "write");
+     sym_tab_add_data_function(write, NULL, NULL, true, true, 0, 1);
+
+     data_type par = create_data_type(STRING);
+     sym_tab_item_t *tointeger = NULL;
+     tointeger = sym_tab_add_item(top_table(scope), "tointeger");
+     sym_tab_add_data_function(tointeger, typ, par, true, true, 1, 1);
+
+     par = create_data_type(STRING);
+     par = add_data_type(typ, NUMBER);
+     par = add_data_type(typ, NUMBER);
+     sym_tab_item_t *substr = NULL;
+     substr = sym_tab_add_item(top_table(scope), "substr");
+     sym_tab_add_data_function(substr, typ, par, true, true, 3, 1);
+
+     par = create_data_type(STRING);
+     par = add_data_type(typ, INTEGER);
+     typ = create_data_type(INTEGER);
+     sym_tab_item_t *ord = NULL;
+     ord = sym_tab_add_item(top_table(scope), "ord");
+     sym_tab_add_data_function(ord, typ, par, true, true, 2, 1);
+
+     par = create_data_type(INTEGER);
+     typ = create_data_type(STRING);
+     sym_tab_item_t *chr = NULL;
+     chr = sym_tab_add_item(top_table(scope), "chr");
+     sym_tab_add_data_function(chr, typ, par, true, true, 1, 1);
+
 }
