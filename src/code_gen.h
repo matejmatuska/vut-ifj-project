@@ -59,9 +59,11 @@ void generate_param_for_write(token_t* param);
 void generate_number_of_params(int params_amount);
 //
 
-//call of the function 
+//pass parameter for general function 
 void generate_newframe(); // generates newframe before passing the parametrs of the function
 void generate_param_before_call(int index, token_t* param); //generates parameter pass before call
+
+//call of the function and asign of the return values
 void generate_call_of_the_func(char* func_id); // calls the function
 void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type); //generates the assign of the retval 
 //

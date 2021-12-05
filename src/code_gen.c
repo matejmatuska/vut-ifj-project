@@ -349,7 +349,8 @@ void generate_function_tointeger()
 }
 
 void generate_function_write()
-{
+{	
+	add_code("#start of the function write\n");
 	add_code("LABEL write\n");
 	add_code("POPS GF@tmp1\n");
 	add_code("LABEL loop2\n");
@@ -360,8 +361,9 @@ void generate_function_write()
 	add_code("WRITE GF@tmp2\n");
 	add_code("JUMP loop2\n");
 	add_code("LABEL end_loop2\n");
-
-	generate_end_of_the_func("write");
+	add_code("RETURN\n");
+	add_code("#end of the function write\n");
+	add_code("\n");
 }
 
 void generate_function_readn()
@@ -443,6 +445,7 @@ void generate_start_of_while(int while_index)
 
 void generate_end_of_while(int while_index)
 {
+	add_code("JUMP while"); add_code_int(while_index); add_code("\n");
 	add_code("LABEL end_while"); add_code_int(while_index); add_code("\n");
 }
 
