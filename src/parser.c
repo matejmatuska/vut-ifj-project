@@ -536,7 +536,9 @@ bool st_list() {
             return false;
     } else if (TOK_IS_ID) {
         if(isfunc(&scope, ID_NAME())){
-            fnc_id();
+            if(!fnc_id()) {
+                return false;
+            }
         } else
         if (!st_var_id()) {
             return false;
@@ -893,8 +895,9 @@ bool fnc_id() {
     data_type par_typy = NULL;
     par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
+    generate_newframe();
     if (item->data.params != 0) {
-        for (int i = 0; i < item->data.params; i++) {
+        for (int i = 0; i < item->data.params; ++i) {
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;
@@ -924,8 +927,9 @@ bool fnc_id() {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
                 }
-            }
 
+            }
+            generate_param_before_call(i, token);
             typ = item->data.param_data_types->next;
             GET_NEXT_TOKEN();
 
@@ -948,13 +952,15 @@ bool fnc_id() {
     } else {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+            generate_call_of_the_func(name);
+            GET_NEXT_TOKEN();
             return true;
         } else {
             ERROR = PARAMETERS_ERR;
             return false;
         }
     }
-
+    generate_call_of_the_func(name);
 
     GET_NEXT_TOKEN();
     return true;
@@ -967,11 +973,14 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t * item, int *var_num)
     }else{
         name_and_data tmp_name = *var_type;
         data_type tmp_type = item->data.return_data_types;
+        int index = 0;
         while (tmp_name != NULL && tmp_type != NULL){
             if(tmp_type->datatype != tmp_name->datatype){
                 ERROR = PARAMETERS_ERR;
                 return false;
             }
+            index++;
+            generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, tmp_name->datatype);
             tmp_name = tmp_name->next;
             tmp_type = tmp_type->next;
         }
@@ -982,8 +991,10 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t * item, int *var_num)
 }
 
 bool st_fnc_id(name_and_data *var_type, int *var_num) {
-    char *name = ID_NAME();
-    sym_tab_item_t *item = scope_search(&scope, name);
+    dynamic_string_t * name = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
+    dyn_str_init(name);
+    dyn_str_add_string(name, ID_NAME());
+    sym_tab_item_t *item = scope_search(&scope, name->s);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
@@ -1003,8 +1014,9 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     data_type par_typy = NULL;
     par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
+    generate_newframe();
     if (item->data.params != 0) {
-        for (int i = 0; i < item->data.params; i++) {
+        for (int i = 0; i < item->data.params; ++i) {
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;
@@ -1035,6 +1047,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
                     return false;
                 }
             }
+            generate_param_before_call(i, token);
 
             typ = item->data.param_data_types->next;
             GET_NEXT_TOKEN();
@@ -1061,12 +1074,16 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             if(!check_returns(var_type, item, var_num)) {
                 return false;
             }
+            generate_call_of_the_func(name->s);
+            dyn_str_free(name);
             return true;
         } else {
             ERROR = PARAMETERS_ERR;
             return false;
         }
     }
+    generate_call_of_the_func(name->s);
+    dyn_str_free(name);
     if(!check_returns(var_type, item, var_num))
     {
         return false;
@@ -1145,6 +1162,7 @@ bool st_var_id() {
                 return false;
             }
             GET_NEXT_TOKEN();
+            return true;
         } else {
             if (!expr(&var_type, &var_num)) {
                 return false;
@@ -1190,7 +1208,6 @@ bool exp_list(data_type *types, int * num) {
         num_of_ret += 1;
         generate_assign_retval(num_of_ret);
     }
-
     if(!next_exp(types, num, &num_of_ret)) {
         return false;
     }
@@ -1214,6 +1231,10 @@ bool next_exp(data_type *types, int * num, int * num_of_ret) {
     }
     GET_NEXT_TOKEN();
     data_type_t typ;
+    if(*types != NULL){
+        *types = (*types)->next;
+    }
+
     if (parse_expr(token, scope,  &typ) != 0) {
         return false;
     } else if ((*types) != NULL) {
