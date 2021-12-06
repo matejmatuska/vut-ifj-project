@@ -54,8 +54,6 @@ sym_tab_datatype get_datatype();
 
 int if_index = 0;
 
-int else_index = 0;
-
 int while_index = 0;
 
 int program();
@@ -85,8 +83,6 @@ bool st_if();
 bool st_while();
 
 bool st_return();
-
-bool ret_expr(data_type *types, int *num, int num_of_ret);
 
 bool next_retype(data_type *types, int *num);
 
@@ -142,7 +138,10 @@ int parse() {
 
     free(token);
     free_ST_stack(&scope);
-    code_in_to_file();
+    if(ERROR == 0){
+        code_in_to_file();
+    }
+
     code_gen_free();
     return result;
 }
@@ -185,18 +184,18 @@ bool body() {
     } else
         GET_NEXT_TOKEN();
     if (TOK_IS_KW(KW_GLOBAL)) {
-        if(!glob_def()){
+        if (!glob_def()) {
             return false;
         }
 
     } else if (TOK_IS_KW(KW_FUNCTION)) {
-        if(!fnc_def()){
+        if (!fnc_def()) {
             return false;
         }
     } else if (token->type == TOKEN_TYPE_ID) {
         generate_start_of_program();
         if (isfunc(&scope, ID_NAME()) == true) {
-            if(!fnc_id()){
+            if (!fnc_id()) {
                 return false;
             }
         } else {
@@ -208,7 +207,7 @@ bool body() {
     } else {
         ERROR = SYNTAX_ERR;
     }
-    if(!body()){
+    if (!body()) {
         return false;
     }
     return true;
@@ -384,7 +383,6 @@ bool glob_def() {
         ERROR = INTERNAL_ERR;
         return false;
     }
-
 
 
     return true;
@@ -615,7 +613,7 @@ bool st_local() {
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
-        } else if (is_type_data()) {
+        } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH)) {
             if (!expr(&par_type, &num)) {
                 return false;
             } else if (num > 0) {
@@ -709,8 +707,8 @@ bool st_if() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+ //   generate_end_of_if(local_if_index);
 
-    generate_start_of_else(local_if_index, local_if_index);
     GET_NEXT_TOKEN();
     push(&scope);
     generate_newframe();
@@ -718,14 +716,14 @@ bool st_if() {
         pop(&scope);
         return false;
     }
-    generate_end_of_else(local_if_index);
+    generate_start_of_else(local_if_index, local_if_index);
 
     pop(&scope);
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    generate_end_of_if(if_index);
+    generate_end_of_else(local_if_index);
     GET_NEXT_TOKEN();
     return true;
 }
@@ -745,12 +743,7 @@ bool st_while() {
     int local_while_index = while_index;
     generate_start_of_while_head(local_while_index);
     GET_NEXT_TOKEN();
-    /*  if (!expr(&par_type, &num)) {
-          return false;
-      } else if (num > 0) {
-          ERROR = SEMANTIC_ERR;
-          return false;
-      } */
+
 
     if (TOK_IS_ID) {
 
@@ -827,51 +820,6 @@ bool st_return() {
     return true;
 }
 
-bool ret_expr(data_type *types, int *num, int num_of_ret) {
-    //TODO dělat věci jako správně returny
-    if (TOK_IS_KW(KW_END) ||
-        TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
-        TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN) || TOK_IS_KW(KW_GLOBAL) ||
-        TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF)) {
-        return true;
-    } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
-        GET_NEXT_TOKEN();
-    }
-
-    data_type_t typ;
-    //generate variable and type
-
-    ERROR = parse_expr(token, scope, &typ);
-
-    if (ERROR == 0 && *types != NULL) {
-        if (TOK_IS_ID) {
-            *num -= 1;
-            return true;
-        }
-        if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
-            *types = (*types)->next;
-
-            *num -= 1;
-
-            if (!ret_expr(types, num, num_of_ret)) {
-                return false;
-            }
-
-            return true;
-        }
-        ERROR = TYPE_INCOMPATIBILITY_ERR;
-        return false;
-    } else if (*types == NULL) {
-        //generate nil
-        *num -= 1;
-        if (!ret_expr(types, num, num_of_ret)) {
-            return false;
-        }
-
-        return true;
-    }
-    return false;
-}
 
 bool write(sym_tab_item_t *item) {
 
@@ -1084,13 +1032,17 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
                     }
 
 
-                    if (typ->datatype != id->data.return_data_types->datatype) {
+                    if (typ->datatype != id->data.return_data_types->datatype &&
+                        !((typ->datatype == NUMBER && id->data.return_data_types->datatype == INTEGER) ||
+                          (typ->datatype == STRING || id->data.return_data_types->datatype == STRING))) {
                         ERROR = TYPE_INCOMPATIBILITY_ERR;
                         return false;
                     }
                 }
             } else if (is_type_data()) {
-                if (get_type_to_sym_type() != typ->datatype) {
+                if (get_type_to_sym_type() != typ->datatype &&
+                    !((typ->datatype == NUMBER && get_type_to_sym_type() == INTEGER) ||
+                      (typ->datatype == STRING || get_type_to_sym_type() == STRING))) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
                 }
@@ -1168,7 +1120,7 @@ bool st_next_var_id(name_and_data *var_type, int *var_num) {
                 return true;
             } else return false;
         }
-    } else if (is_type_data()) {
+    } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH)) {
         if (!expr(var_type, var_num)) {
             return false;
         } else if (*var_num > 0) {
@@ -1216,7 +1168,7 @@ bool st_var_id() {
                 return false;
             }
         }
-    } else if (is_type_data()) {
+    } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH)) {
         if (!expr(&var_type, &var_num)) {
             return false;
         } else if (var_num > 0) {
@@ -1312,7 +1264,6 @@ bool option() {
  *  Notes: Works separatedly from main rules, must be called by author
  */
 bool expr(name_and_data *types, int *num) {
-    //TODO dodělat podtyp nnumber a int
 
     /*  if(*types == NULL ){
           return true;
@@ -1339,10 +1290,11 @@ bool expr(name_and_data *types, int *num) {
         }
         if (TOK_IS_ID) {
             *num -= 1;
+            generate_pop((*types)->string->s);
             return true;
         }
         if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
-
+            generate_pop((*types)->string->s);
             *types = (*types)->next;
 
             *num -= 1;
