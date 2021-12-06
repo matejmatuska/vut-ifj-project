@@ -84,6 +84,8 @@ bool st_while();
 
 bool st_return();
 
+bool fnc_expr(data_type *types, int *num, int par_index);
+
 bool next_retype(data_type *types, int *num);
 
 bool fnc_id();
@@ -165,7 +167,7 @@ int program() {
     push(&scope);
     generate_explicit_fnc();
 
-    generate_newframe();
+//    generate_newframe();
     if (!body())
         return ERROR;
 
@@ -711,7 +713,7 @@ bool st_if() {
 
     GET_NEXT_TOKEN();
     push(&scope);
-    generate_newframe();
+
     if (!st_list()) {
         pop(&scope);
         return false;
@@ -820,6 +822,53 @@ bool st_return() {
     return true;
 }
 
+bool fnc_expr(data_type *types, int *num, int par_index) {
+    //TODO dělat věci jako správně returny
+    if (/*TOK_IS_KW(KW_END) ||
+        TOK_IS_KW(KW_IF) || TOK_IS_KW(KW_WHILE) || TOK_IS_KW(KW_LOCAL) ||
+        TOK_IS_KW(KW_RETURN) || TOK_IS_KW(KW_ELSE) || TOK_IS_KW(KW_THEN) || TOK_IS_KW(KW_GLOBAL) ||
+        TOK_IS_KW(KW_FUNCTION) || TOK_IS_TYPE(TOKEN_TYPE_EOF)*/ TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        return true;
+    } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        GET_NEXT_TOKEN();
+    }
+
+    data_type_t typ;
+    //generate variable and type
+
+    ERROR = parse_expr(token, scope, &typ);
+    par_index += 1;
+    if (ERROR == 0 && *types != NULL) {
+        if (TOK_IS_ID) {
+            *num -= 1;
+            generate_param_before_call(par_index, token); //todo maybe delete
+            return true;
+        }
+        if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
+            generate_param_before_call(par_index, token);
+            *types = (*types)->next;
+
+            *num -= 1;
+
+            if (!fnc_expr(types, num, par_index)) {
+                return false;
+            }
+
+            return true;
+        }
+        ERROR = TYPE_INCOMPATIBILITY_ERR;
+        return false;
+    } else if (*types == NULL) {
+        generate_param_before_call(par_index, token);
+        *num -= 1;
+        if (!fnc_expr(types, num, par_index)) {
+            return false;
+        }
+
+        return true;
+    }
+    return false;
+}
 
 bool write(sym_tab_item_t *item) {
 
@@ -952,7 +1001,7 @@ bool fnc_id() {
         }
     }
     generate_call_of_the_func(name->s);
-
+    free(name);
     GET_NEXT_TOKEN();
     return true;
 }
@@ -1011,7 +1060,20 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
-    if (item->data.params != 0) {
+    int num = item->data.params;
+    int par_index = 0;
+    GET_NEXT_TOKEN();
+    if(!fnc_expr(&par_typy, &num, par_index)){
+        return false;
+    }
+
+    if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+
+
+/*    if (item->data.params != 0) {
         for (int i = 0; i < item->data.params; ++i) {
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
@@ -1083,13 +1145,14 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             return false;
         }
     }
+    */
     generate_call_of_the_func(name->s);
     dyn_str_free(name);
     if (!check_returns(var_type, item, var_num)) {
         return false;
     }
-
-
+    generate_call_of_the_func(name->s);
+    free(name);
     GET_NEXT_TOKEN();
     return true;
 }
