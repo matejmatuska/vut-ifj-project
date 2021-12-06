@@ -215,7 +215,7 @@ void generate_newframe()
 
 void generate_param_for_write(token_t* param)
 {
-	add_code("PUSHS LF@"); generate_operand(param); add_code("\n");
+	add_code("PUSHS"); generate_operand(param); add_code("\n");
 }
 
 void generate_number_of_params(int params_amount)
