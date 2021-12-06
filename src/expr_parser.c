@@ -50,7 +50,7 @@ static enum ops op_lookup[TABLE_SIZE][TABLE_SIZE] = {
 };
 
 // returns symbol's index in the lookup table
-static int get_lookup_index(symbol_type_t type)
+static int get_lookup_index(sym_type_t type)
 {
     switch (type)
     {
@@ -98,9 +98,11 @@ static int get_lookup_index(symbol_type_t type)
     }
 }
 
-static enum ops get_operation(symbol_type_t top_terminal, symbol_type_t current_sym)
+static enum ops get_operation(sym_type_t top_term, sym_type_t curr_sym)
 {
-    return op_lookup[get_lookup_index(top_terminal)][get_lookup_index(current_sym)];
+    int top_index = get_lookup_index(top_term);
+    int curr_index = get_lookup_index(curr_sym);
+    return op_lookup[top_index][curr_index];
 }
 
 /**
@@ -265,7 +267,7 @@ static int apply_rule(int count, symbol_t *symbols, data_type_t *res_type)
 /**
  * Converts token to symbol type
  */
-symbol_type_t token_to_sym_type(token_t token)
+sym_type_t token_to_sym_type(token_t token)
 {
     switch (token.type)
     {
@@ -359,12 +361,39 @@ data_type_t get_token_data_type(token_t token)
         case TOKEN_TYPE_KW:
             if (token.attribute.keyword == KW_NIL)
                 return T_NIL;
-            else
-                return T_UNKNOWN;
+            break;
         default:
             return T_UNKNOWN;
     }
     return T_UNKNOWN;
+}
+
+static int shift(sym_stack_t *stack, token_t *token,
+        sym_type_t sym, data_type_t dtype)
+{
+    if (!sym_stack_push(stack, sym, dtype))
+        return INTERNAL_ERR;
+
+    if (get_next_token(token) == LEX_ERR)
+        return LEX_ERR;
+
+    return SYNTAX_OK;
+}
+
+static int shift_w_handle(sym_stack_t *stack, token_t *token,
+        sym_type_t sym, data_type_t dtype)
+{
+    if (!sym_stack_insert_handle(stack))
+        return INTERNAL_ERR;
+
+    if (sym == S_INT_LIT || sym == S_STR_LIT || sym == S_NUM_LIT || sym == S_ID)
+    {
+        generate_push(token);
+    }
+
+    shift(stack, token, sym, dtype);
+
+    return SYNTAX_OK;
 }
 
 /**
@@ -374,10 +403,10 @@ data_type_t get_token_data_type(token_t token)
  * @param stack the symbol stack
  * @return error code
  */
-static int reduce(symbol_stack_t *stack)
+static int reduce(sym_stack_t *stack)
 {
     int count = 0;
-    symbol_t *to_reduce = symbol_stack_top_to_handle(stack, &count);
+    symbol_t *to_reduce = sym_stack_top_to_handle(stack, &count);
 
     if (count < 1 || count > 3)
         return SYNTAX_ERR;
@@ -389,9 +418,9 @@ static int reduce(symbol_stack_t *stack)
 
     // pop all reduced symbols + handle
     for (int i = 0; i < count + 1; i++)
-        symbol_stack_pop(stack);
+        sym_stack_pop(stack);
 
-    symbol_stack_push(stack, S_NON_TERMINAL, data_type);
+    sym_stack_push(stack, S_NON_TERMINAL, data_type);
     return SYNTAX_OK;
 }
 
@@ -434,67 +463,51 @@ static int check_end_of_expr()
  * @param stack symbol stack used by precedence analysis
  * @return error code
  */
-int analyze(token_t *token, symbol_stack_t *stack, data_type_t *res_type)
+int analyze(token_t *token, sym_stack_t *stack, data_type_t *res_type)
 {
-    if (!symbol_stack_push(stack, S_DOLLAR, T_UNKNOWN))
+    if (!sym_stack_push(stack, S_DOLLAR, T_UNKNOWN))
         return INTERNAL_ERR;
 
-    symbol_t *top_term = symbol_stack_top_terminal(stack);
-    symbol_type_t curr_sym = token_to_sym_type(*token);
+    symbol_t *top_term = sym_stack_top_terminal(stack);
+    sym_type_t curr_sym = token_to_sym_type(*token);
 
     while (!(curr_sym == S_DOLLAR && top_term->type == S_DOLLAR))
     {
+        int result = SYNTAX_ERR;
         data_type_t data_type = get_token_data_type(*token);
         switch (get_operation(top_term->type, curr_sym))
         {
             case S: // shift
-                if (!symbol_stack_push(stack, curr_sym, data_type))
-                    return INTERNAL_ERR;
-                else
-                    if(get_next_token(token) == LEX_ERR)
-                        return LEX_ERR;
+                result = shift(stack, token, curr_sym, data_type);
+                if (result != SYNTAX_OK)
+                    return result;
                 break;
 
             case H: // shift with handle
-                if (!symbol_stack_insert_handle(stack))
-                    return INTERNAL_ERR;
-
-                if (!symbol_stack_push(stack, curr_sym, data_type))
-                    return INTERNAL_ERR;
-
-                if (curr_sym == S_INT_LIT || curr_sym == S_STR_LIT
-                        || curr_sym == S_NUM_LIT || curr_sym == S_ID)
-                {
-                    generate_push(token);
-                }
-
-                if(get_next_token(token) == LEX_ERR)
-                    return LEX_ERR;
-
+                result = shift_w_handle(stack, token, curr_sym, data_type);
+                if (result != SYNTAX_OK)
+                    return result;
                 break;
 
             case R: // reduce
-                {
-                    int result = reduce(stack);
-                    if (result != SYNTAX_OK)
-                        return result;
-                    break;
-                }
-            case E: // error
-                {
-                    int result = check_end_of_expr();
-                    if (result != SYNTAX_OK)
-                        return result;
+                result = reduce(stack);
+                if (result != SYNTAX_OK)
+                    return result;
+                break;
 
-                    *res_type = symbol_stack_top(stack)->data_type;
-                    return SYNTAX_OK;
-                }
+            case E: // error
+                result = check_end_of_expr();
+                if (result != SYNTAX_OK)
+                    return result;
+
+                *res_type = sym_stack_top(stack)->data_type;
+                return SYNTAX_OK;
         }
-        top_term = symbol_stack_top_terminal(stack);
+        top_term = sym_stack_top_terminal(stack);
         curr_sym = token_to_sym_type(*token);
     }
 
-    *res_type = symbol_stack_top(stack)->data_type;
+    *res_type = sym_stack_top(stack)->data_type;
     return SYNTAX_OK;
 }
 
@@ -502,11 +515,11 @@ int parse_expr(token_t *token, ST_stack *st_stack, data_type_t *res_type)
 {
     ststack = st_stack;
 
-    symbol_stack_t stack;
-    symbol_stack_init(&stack);
+    sym_stack_t stack;
+    sym_stack_init(&stack);
 
     int result = analyze(token, &stack, res_type);
 
-    symbol_stack_free(&stack);
+    sym_stack_free(&stack);
     return result;
 }
