@@ -52,7 +52,7 @@ void generate_push(token_t* token);//generates push of the value on the stack
 void generate_pop(char* var_id); //generates pop of the value from the stack
 void generate_declare_variable(char* var_id); //generates declaration of the variable
 void generate_init_variable(char* var_id, sym_tab_datatype type);//generates init of the variable with default values
-void generate_operation(token_t* operation);//generates the operation according the rule
+void generate_operation(token_type operation);//generates the operation according the rule
 //
 
 //type check generation
