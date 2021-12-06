@@ -6,30 +6,6 @@
 #include "scanner.h"
 #include "symtable.h"
 
-typedef enum {
-    NO_MATCH,  // symbol sequence on stack doesn't match any rule
-
-    E_PLUS_E,  // E -> E + E
-    E_MINUS_E, // E -> E - E
-    E_MUL_E,   // E -> E* E
-    E_DIV_E,   // E -> E / E
-    E_INT_DIV_E, // E -> E // E
-
-    E_EQ_E,  // E -> E == E
-    E_NEQ_E, // E -> E ~= E
-    E_LEQ_E, // E -> E <= E
-    E_LNE_E, // E -> E < E
-    E_GEQ_E, // E -> E >= E
-    E_GNE_E, // E -> E > E
-
-    LEN_E, // E -> #E
-    E_CONCAT_E, // E -> E .. E
-
-    LP_E_RP, // E -> (E)
-
-    VAL_TO_E, // E -> i
-} rule_t;
-
 //before generation
 void code_gen_init();
 
@@ -76,7 +52,7 @@ void generate_push(token_t* token);//generates push of the value on the stack
 void generate_pop(char* var_id); //generates pop of the value from the stack
 void generate_declare_variable(char* var_id); //generates declaration of the variable
 void generate_init_variable(char* var_id, sym_tab_datatype type);//generates init of the variable with default values
-void generate_operation(rule_t rule);//generates the operation according the rule
+void generate_operation(token_type operation);//generates the operation according the rule
 //
 
 //type check generation
