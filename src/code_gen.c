@@ -479,9 +479,9 @@ void generate_nil_check()
 	add_code("PUSHS GF@tmp1\n");
 }
 
-void generate_operation(token_t* operation)
+void generate_operation(token_type operation)
 {
-	switch (operation->type)
+	switch (operation)
 	{
 	case TOKEN_TYPE_PLUS:
 		generate_nil_check();
