@@ -148,26 +148,13 @@ void generate_retval(int index, sym_tab_datatype type)
 
 void generate_assign_retval(int index)
 {
-	/*
-	add_code("MOVE LF@retval"); add_code_int(index);
-	*/
 	add_code("POPS LF@retval"); add_code_int(index); add_code("\n");
 }
 
-/*
-void generate_assing_retval_from(token_t* token)
-<<<<<<< HEAD
+void generate_retval_nil_asign(int index)
 {
-	
-	add_code(" LF@"); generate_operand(token); add_code("\n");
-	
-=======
-{
-	
-	add_code(" LF@"); generate_operand(token); add_code("\n");
-	
+	add_code("MOVE LF@retval1 nil@nil\n");
 }
-*/
 
 dynamic_string_t* convert_string(char* string)
 {
@@ -228,7 +215,7 @@ void generate_newframe()
 
 void generate_param_for_write(token_t* param)
 {
-	add_code("PUSHS LF@"); add_code(param->attribute.string->s); add_code("\n");
+	add_code("PUSHS LF@"); generate_operand(param); add_code("\n");
 }
 
 void generate_number_of_params(int params_amount)
@@ -239,7 +226,8 @@ void generate_number_of_params(int params_amount)
 void generate_param_before_call(int index, token_t* param)
 {
 	add_code("DEFVAR TF@%"); add_code_int(index); add_code("\n");
-	add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operand(param); add_code("\n");
+	//add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operand(param); add_code("\n");
+	add_code("POPS TF@%"); add_code_int(index); add_code("\n");
 }
 
 void generate_push(token_t* token)
@@ -247,9 +235,9 @@ void generate_push(token_t* token)
 	add_code("PUSHS"); generate_operand(token); add_code("\n");
 }
 
-void generate_pop(token_t* token)
+void generate_pop(char* var_id)
 {
-	add_code("POPS"); generate_operand(token); add_code("\n");
+	add_code("POPS LF@"); add_code(var_id); add_code("\n");
 }
 
 void generate_declare_variable(char* var_id)
@@ -536,12 +524,10 @@ void generate_operation(rule_t rule)
 		add_code("FLOAT2INTS\n");
 		break;
 	case E_EQ_E:
-		generate_nil_check();
 
 		add_code("EQS\n");
 		break;
 	case E_NEQ_E:
-		generate_nil_check();
 
 		add_code("EQS\n"); add_code("\n");
 		add_code("NOTS\n");

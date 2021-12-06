@@ -47,6 +47,8 @@ void generate_func_param_assign(char* param_id, int param_index); // generates d
 void generate_retval(int index, sym_tab_datatype type); //generates declaration of the retval
 //here is the CODE of the function//
 void generate_assign_retval(int index); //generates retval assign
+//OR
+void generate_retval_nil_asign(int index);//generates nil retvalue
 void generate_end_of_the_func(char* func_id);// generates the end of the function
 //
 
@@ -71,7 +73,7 @@ void generate_end_of_program();// generates the end of the main func
 
 //expresion generation
 void generate_push(token_t* token);//generates push of the value on the stack
-void generate_pop(token_t* token); //generates pop of the value from the stack
+void generate_pop(char* var_id); //generates pop of the value from the stack
 void generate_declare_variable(char* var_id); //generates declaration of the variable
 void generate_init_variable(char* var_id, sym_tab_datatype type);//generates init of the variable with default values
 void generate_operation(rule_t rule);//generates the operation according the rule
