@@ -215,7 +215,7 @@ void generate_newframe()
 
 void generate_param_for_write(token_t* param)
 {
-	add_code("PUSHS LF@"); generate_operand(param); add_code("\n");
+	add_code("PUSHS"); generate_operand(param); add_code("\n");
 }
 
 void generate_number_of_params(int params_amount)
@@ -479,26 +479,26 @@ void generate_nil_check()
 	add_code("PUSHS GF@tmp1\n");
 }
 
-void generate_operation(rule_t rule)
+void generate_operation(token_t* operation)
 {
-	switch (rule)
+	switch (operation->type)
 	{
-	case E_PLUS_E:
+	case TOKEN_TYPE_PLUS:
 		generate_nil_check();
 
 		add_code("ADDS\n");
 		break;
-	case E_MINUS_E:
+	case TOKEN_TYPE_MINUS:
 		generate_nil_check();
 
 		add_code("SUBS\n");
 		break;
-	case E_MUL_E:
+	case TOKEN_TYPE_MUL_SIGN:
 		generate_nil_check();
 
 		add_code("MULS\n");
 		break;
-	case E_DIV_E:
+	case TOKEN_TYPE_DIV_SIGN:
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
@@ -509,7 +509,7 @@ void generate_operation(rule_t rule)
 		add_code("PUSHS GF@tmp1\n");
 		add_code("DIVS\n");
 		break;
-	case E_INT_DIV_E:
+	case TOKEN_TYPE_WN_DIV_SIGN:
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
@@ -523,16 +523,16 @@ void generate_operation(rule_t rule)
 		add_code("DIVS\n");
 		add_code("FLOAT2INTS\n");
 		break;
-	case E_EQ_E:
+	case TOKEN_TYPE_COMPARING:
 
 		add_code("EQS\n");
 		break;
-	case E_NEQ_E:
+	case TOKEN_TYPE_COMPARING2:
 
 		add_code("EQS\n"); add_code("\n");
 		add_code("NOTS\n");
 		break;
-	case E_LEQ_E:
+	case TOKEN_TYPE_LESSEQ:
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
@@ -545,12 +545,12 @@ void generate_operation(rule_t rule)
 		add_code("LTS\n");
 		add_code("ORS\n");
 		break;
-	case E_LNE_E:
+	case TOKEN_TYPE_LESS:
 		generate_nil_check();
 
 		add_code("LTS");
 		break;
-	case E_GEQ_E:
+	case TOKEN_TYPE_GREATEREQ:
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
@@ -564,12 +564,12 @@ void generate_operation(rule_t rule)
 		add_code("ORS\n");
 		break;
 
-	case E_GNE_E:
+	case TOKEN_TYPE_GREATER:
 		generate_nil_check();
 
 		add_code("GTS\n");
 		break;
-	case LEN_E:
+	case TOKEN_TYPE_LENGTH:
 		
 		add_code("POPS GF@tmp1\n");
 		add_code("TYPE GF@tmp3 GF@tmp1\n");
@@ -580,7 +580,7 @@ void generate_operation(rule_t rule)
 		add_code("STRLEN GF@tmp1 GF@tmp1\n");
 		add_code("PUSHS  GF@tmp1\n");
 		break;
-	case E_CONCAT_E:
+	case TOKEN_TYPE_DOUBLE_DOT:
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
