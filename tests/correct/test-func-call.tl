@@ -5,7 +5,7 @@ function hi() : integer
     return 3
 end
 
-function main(a : integer) : integer, string
+function main(a : integer) : integer, number
     local heh : integer = 5 + 7
     local bye : integer = 12 + 3
 
