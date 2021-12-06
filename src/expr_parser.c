@@ -169,7 +169,7 @@ static bool check_type_compat(data_type_t a, data_type_t b)
 static int rule_equality(data_type_t t1, data_type_t t2, data_type_t *res_type)
 {
     if (!check_type_compat(t1, t2))
-        if (t1 != T_NIL || t2 != T_NIL)
+        if (!(t1 == T_NIL || t2 == T_NIL))
             return INCOMPATIBILITY_ERR;
 
     *res_type = T_BOOL;
