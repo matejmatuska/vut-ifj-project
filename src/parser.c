@@ -1013,8 +1013,8 @@ bool fnc_id() {
     }
 
     // GET_NEXT_TOKEN();
-    data_type par_typy = NULL;
-    par_typy = item->data.param_data_types;
+    //data_type par_typy = NULL;
+    //par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
     if (item->data.params != 0) {
@@ -1138,12 +1138,12 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     }
 
     // GET_NEXT_TOKEN();
-    data_type par_typy = NULL;
-    par_typy = item->data.param_data_types;
+    //data_type par_typy = NULL;
+    //par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
-    int num = item->data.params;
-    int par_index = 0;
+   // int num = item->data.params;
+   // int par_index = 0;
    // GET_NEXT_TOKEN();
     /*
     if(!fnc_expr(&par_typy, &num, par_index)){

@@ -225,6 +225,8 @@ void generate_operand(token_t* operand)
 		if (operand->attribute.keyword == KW_NIL)
 			add_code(" nil@nil");
 		break;
+	default:
+		break;
 	}
 }
 
@@ -607,6 +609,8 @@ void generate_operation(token_type operation)
 		add_code("POPS GF@tmp2\n");
 		add_code("CONCAT GF@tmp1 GF@tmp2 GF@tmp1\n");
 		add_code("PUSHS GF@tmp1\n");
+		break;
+	default:
 		break;
 	}
 	add_code("\n");
