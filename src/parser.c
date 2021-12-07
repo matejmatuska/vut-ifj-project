@@ -269,6 +269,7 @@ bool fnc_def() {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
             sym_tab_add_data_function(item, ret_type, par_type, true, true, par_num, ret_num);
         } else {
+            sym_tab_add_data_function(item, item->data.return_data_types, item->data.param_data_types, true, true, item->data.params, item->data.returns);
             exist = true;
         }
     }
