@@ -539,7 +539,7 @@ bool next_retype(data_type *types, int *num) {
     *types = add_data_type(*types, get_datatype());
     (*num)++;
     generate_retval(*num, get_datatype());
-    return next_type(types, num);
+    return next_retype(types, num);
 
 }
 
