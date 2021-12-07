@@ -45,7 +45,7 @@ void add_code_float(float integer)
 {
 	
 	char tmp[40];
-	sprintf(tmp, "%f", integer);
+	sprintf(tmp, "%a", integer);
 	dyn_str_add_string(&code, tmp);
 	
 }
@@ -207,20 +207,17 @@ void generate_operand(token_t* operand)
 		dyn_str_free(tmp);
 		break;
 	case TOKEN_TYPE_DOUBLE:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 	case TOKEN_TYPE_EXP:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 
 	case TOKEN_TYPE_SIGN_EXP:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 
 	case TOKEN_TYPE_KW:
