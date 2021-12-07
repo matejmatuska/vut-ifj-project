@@ -415,6 +415,8 @@ static sym_type_t token_to_sym_type(token_t token)
         case TOKEN_TYPE_STR:
             return S_STR_LIT;
         case TOKEN_TYPE_DOUBLE:
+        case TOKEN_TYPE_EXP:
+        case TOKEN_TYPE_SIGN_EXP:
             return S_NUM_LIT;
         case TOKEN_TYPE_KW:
             if (token.attribute.keyword == KW_NIL)
