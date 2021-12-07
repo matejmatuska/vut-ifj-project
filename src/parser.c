@@ -350,14 +350,13 @@ bool fnc_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
-
-    generate_end_of_the_func((char*)act_fnc->key);
     int i = 0;
     while( i < ret_num){
         i++;
         generate_retval_nil_asign(i);
     }
     pop(&scope);
+    generate_end_of_the_func((char*)act_fnc->key);
 
     return true;
 }
@@ -867,7 +866,7 @@ bool st_return() {
         return false;
     }
 
-
+    generate_end_of_the_func((char*)act_fnc->key);
 
 
     //TODO GET_NEXT_TOKEN();
