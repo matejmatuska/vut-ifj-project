@@ -158,7 +158,6 @@ static bool check_type_compat(data_type_t a, data_type_t b)
 
     if ((a == T_INT && b == T_NUMBER) || (a == T_NUMBER && b == T_INT))
     {
-        //TODO wait for code gen update
         generate_type_check_before_operation(to_sym_datatype(a), to_sym_datatype(b));
         return true;
     }
@@ -247,52 +246,71 @@ static int apply_binary_rule(data_type_t t1, symbol_t operator,
     if (t1 == T_UNKNOWN || t2 == T_UNKNOWN)
         return UNDEFINED_ERR;
 
+    int res = SYNTAX_ERR;
     switch (operator.type) {
         case S_PLUS:
+            res = rule_plus_minus_mult(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_PLUS);
-            return rule_plus_minus_mult(t1, t2, res_type);
+            break;
+
         case S_MINUS:
+            res = rule_plus_minus_mult(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_MINUS);
-            return rule_plus_minus_mult(t1, t2, res_type);
+            break;
+
         case S_MULT:
+            res = rule_plus_minus_mult(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_MUL_SIGN);
-            return rule_plus_minus_mult(t1, t2, res_type);
+            break;
 
         case S_DIV:
+            res = rule_divide(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_DIV_SIGN);
-            return rule_divide(t1, t2, res_type);
+            break;
 
         case S_INT_DIV:
+            res = rule_int_divide(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_WN_DIV_SIGN);
-            return rule_int_divide(t1, t2, res_type);
+            break;
 
         case S_CONCAT:
+            res = rule_concat(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_DOUBLE_DOT);
-            return rule_concat(t1, t2, res_type);
+            break;
 
         case S_EQ:
+            res = rule_equality(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_COMPARING);
-            return rule_equality(t1, t2, res_type);
+            break;
+
         case S_NEQ:
+            res = rule_equality(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_COMPARING2);
-            return rule_equality(t1, t2, res_type);
+            break;
 
         case S_LEQ:
+            res = rule_relational(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_LESSEQ);
-            return rule_relational(t1, t2, res_type);
+            break;
+
         case S_LNE:
+            res = rule_relational(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_LESS);
-            return rule_relational(t1, t2, res_type);
+            break;
+
         case S_GEQ:
+            res = rule_relational(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_GREATEREQ);
-            return rule_relational(t1, t2, res_type);
+            break;
+
         case S_GNE:
+            res = rule_relational(t1, t2, res_type);
             generate_operation(TOKEN_TYPE_GREATER);
-            return rule_relational(t1, t2, res_type);
+            break;
         default:
             return SYNTAX_ERR;
     }
-    return SYNTAX_OK;
+    return res;
 }
 
 static int rule_operand(data_type_t dtype, data_type_t *res_type)
