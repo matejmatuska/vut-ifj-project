@@ -352,6 +352,11 @@ bool fnc_def() {
     }
 
     generate_end_of_the_func((char*)act_fnc->key);
+    int i = 0;
+    while( i < ret_num){
+        i++;
+        generate_retval_nil_asign(i);
+    }
     pop(&scope);
 
     return true;
@@ -1042,13 +1047,18 @@ bool fnc_id() {
     //par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
-
+    int i = 0;
     if (item->data.params != 0) {
-        int i = 0;
-        while ( i < item->data.params) {
+
+        while (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
 
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+                ERROR = PARAMETERS_ERR;
+                return false;
+            }
+
+            if(typ == NULL){
                 ERROR = PARAMETERS_ERR;
                 return false;
             }
@@ -1111,6 +1121,8 @@ bool fnc_id() {
             return false;
         }
     }
+
+
     generate_call_of_the_func(name->s);
 //    free(name);
     GET_NEXT_TOKEN();
