@@ -505,7 +505,7 @@ static int shift_w_handle(sym_stack_t *stack, token_t *token,
     if (!sym_stack_insert_handle(stack))
         return INTERNAL_ERR;
 
-    if (sym == S_INT_LIT || sym == S_STR_LIT || sym == S_NUM_LIT || sym == S_ID)
+    if (sym == S_INT_LIT || sym == S_STR_LIT || sym == S_NUM_LIT || sym == S_ID || sym == S_NIL)
     {
         generate_push(token);
     }
