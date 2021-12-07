@@ -1,6 +1,7 @@
 require "ifj21"
 
-function olalala   (     x: string, haha: integer          ) : string,     integer
+global olalala: function(number) : string, integer
+
+function olalala   (x: number) : string, integer
 end
 
-global barrr: function(number)

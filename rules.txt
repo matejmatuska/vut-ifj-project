@@ -1,0 +1,65 @@
+#TODO môže byť aj niečo ine ako "ifj21" ?
+
+1 <prog> -> require STRING_LITERAL <body> EOF P = require
+
+2 <body> -> global ID : function(<type-list>) <ret-type-list> <body> P = global
+3 <body> -> function ID (<param-list>) <ret-type-list> <st-list> end <body> P = function
+4 <body> -> [epsilon] P = EOF
+34 <body> -> ID (<term-list>) <body> P = ID
+
+5 <type-list> -> [epsilon] P = )
+6 <type-list> -> <type> <next-type> P = int, number, string
+7 <next-type> -> , <type> <next-type> P = ,
+8 <next-type> -> [epsilon] P = ), global, function, eof, end, if, while, local, return, ID
+
+9 <ret-type-list> -> : <type> <next-type> P = :
+10 <ret-type-list> -> [epsilon] P = global, function, end, eof, if, while, local, return, ID
+
+11 <param-list> -> [epsilon] P = )
+12 <param-list> -> ID : <type> <next-param> P = ID
+13 <next-param> -> , ID : <type> <next-param> P = ,
+14 <next-param> -> [epsilon] P = )
+
+    ALTERNATIVNE (ale asi to nema zmysel) :
+    <param-list> -> <param> <next-param>
+    <next-param> -> , <param> <next-param>
+    <param> -> ID : <type>
+
+15 <type> -> integer P = integer
+16 <type> -> number P = number
+17 <type> -> string P = string
+
+18 <st-list> -> <statement> <st-list> P = if, while, local, return, ID
+19 <st-list> -> [epsilon] P = end, else
+
+20 <statement> -> local id : <type> = <option> P = local
+
+21 <statement> -> if <exp> then <st-list> else <st-list> end P = if
+22 <statement> -> while <exp> do <st-list> end P = while
+
+23 <statement> -> return <exp-list> P = return
+
+24 <id-list> -> ID <next-id> P = ID
+25 <next-id> -> , ID <next-id> P = ,
+26 <next-id> -> [epsilon] P = "="
+
+27 <exp-list> -> <exp> <next-exp> P = TODO F(exp)
+28 <next-exp> -> , <exp> <next-exp> P = ,
+29 <next-exp> -> [epsilon] P = if, while, local, return, ID, end
+
+30 <statement> -> <id-list> = <option> P = ID
+31 <option> -> <exp-list> // potom pozriet do tabulky symbolov P = F(<EXP>) :D TODO
+32 <option> -> ID (<term-list>) P = ID
+
+33 <statement> -> ID (<term-list>) P = ID
+
+35 <term-list> -> [epsilon] P = )
+36 <term-list> -> <term> <next-term> P = nil, id, STRINGL, INTEGERL, NUMBERL
+37 <next-term> -> , <term> <next-term> P = ,
+38 <next-term> -> [epsilon] P = )
+
+39 <term> -> nil P = nil
+40 <term> -> ID P = ID
+41 <term> -> STRING_LITERAL = P
+42 <term> -> INTEGER_LITERAL = P
+43 <term> -> NUMBER_LITERAL = P

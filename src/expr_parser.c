@@ -12,7 +12,6 @@ typedef enum {
     R, // reduce
     H, // shift with handle
     E, // error
-    T // TODO
 } ops_t;
 
 // assigned values are indices to the precedence lookup table
@@ -35,9 +34,9 @@ static ops_t op_lookup[TABLE_SIZE][TABLE_SIZE] = {
     { R, H, R, H, R, H, R, H, R },
     { R, R, R, H, R, H, R, H, R },
     { H, H, R, H, H, H, R, H, R },
-    { R, R, R, T, R, H, T, H, R },
+    { R, R, R, H, R, H, R, H, R },
     { H, H, R, H, H, H, R, H, R },
-    { H, H, H, T, H, H, S, H, E },
+    { H, H, H, H, H, H, S, H, E },
     { R, R, R, E, R, E, R, E, R },
     { R, R, R, E, R, E, R, E, R },
     { H, H, H, H, H, H, E, H, E }
@@ -106,6 +105,7 @@ static int get_lookup_index(symbol_type_t type)
         case INT_LIT:
         case NUM_LIT:
         case STR_LIT:
+        case NIL:
             return S_VAL;
 
         case DOLLAR:
@@ -122,6 +122,9 @@ static ops_t get_operation(symbol_type_t top_terminal, symbol_type_t current_sym
 }
 
 /**
+ * Matches a sequence of symbols to a rule
+ *
+ * @note The derivation is reversed so the symbols are expected in the reverse order
  * @param count number of symbols to match rule to
  * @param symbols linked list containing count symbols
  * @param rule destination to save rule to
@@ -138,14 +141,15 @@ static int match_rule(int count, symbol_t *symbols, rule_t *rule)
     {
         case 1:
             if (s1->type == ID || s1->type == STR_LIT
-                    || s1->type == INT_LIT || s1->type == NUM_LIT)
+                    || s1->type == INT_LIT || s1->type == NUM_LIT
+                    || s1->type == NIL)
             {
                 return VAL_TO_E; // E -> i
             }
             return NO_MATCH;
 
         case 2:
-            if (s1->type == LEN && s2->type == NON_TERMINAL)
+            if (s1->type == NON_TERMINAL && s2->type == LEN)
                 return LEN_E;
 
             return NO_MATCH;
@@ -245,6 +249,10 @@ symbol_type_t token_to_symbol(token_t token)
             return STR_LIT;
         case TOKEN_TYPE_DOUBLE:
             return NUM_LIT;
+        case TOKEN_TYPE_KW:
+            if (token.attribute.keyword == KW_NIL)
+                return NIL;
+            return DOLLAR;
 
         default:
             return DOLLAR;

@@ -120,7 +120,7 @@ bool symbol_stack_pop(symbol_stack_t *stack)
 void symbol_stack_free(symbol_stack_t *stack)
 {
     symbol_t *iter = stack->top;
-    while (iter->next != NULL)
+    while (iter != NULL)
     {
         symbol_t *tmp = iter->next;
         free(iter);

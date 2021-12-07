@@ -1,6 +1,7 @@
 require "ifj21"
 
 function abc(a : integer, b : integer)
+    local c : integer = 5
 
     while a + b do
         while a - b do
@@ -13,7 +14,7 @@ function abc(a : integer, b : integer)
 
     if b * c then
     else
-        while a / b do
+        while a / b > 50 do
         end
     end
 end
