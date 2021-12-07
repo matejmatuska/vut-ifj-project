@@ -165,7 +165,7 @@ int program() {
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_STR)
         && !dyn_str_compare(token->attribute.string, "ifj21")) {
-        ERROR = SYNTAX_ERR;
+        ERROR = SEMANTIC_ERR;
         return ERROR;
     }
     generate_program_head();
@@ -237,6 +237,7 @@ bool fnc_def() {
     int ret_num = 0;
     bool exist = false;
     if (!TOK_IS_ID) {
+        ERROR = SYNTAX_ERR;
         return false;
     } else {
         item = SYM_FIND();
