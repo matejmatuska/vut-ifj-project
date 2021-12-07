@@ -72,10 +72,21 @@ void generate_call_of_the_func(char* func_id)
 
 void generate_type_check_before_asign(sym_tab_datatype from_type, sym_tab_datatype to_type)
 {
+	
 	if (from_type == INTEGER && to_type == NUMBER)
 	{
 		add_code("INT2FLOATS\n");//converts from_type to FLOAT
 	}
+	
+	/*
+	if (to_type == NUMBER)
+	{
+		add_code("POPS GF@tmp1\n");
+		add_code("TYPE GF@tmp2 GF@tmp1\n");
+		add_code("JUMPIFEQ __conversion__ GF@tmp2 string@int\n");
+		
+	}
+	*/
 }
 
 void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type)
@@ -155,7 +166,7 @@ void generate_assign_retval(int index)
 
 void generate_retval_nil_asign(int index)
 {
-	add_code("MOVE LF@retval1 nil@nil\n");
+	add_code("MOVE LF@retval"); add_code_int(index); add_code(" nil@nil\n");
 }
 
 dynamic_string_t* convert_string(char* string)
@@ -256,6 +267,7 @@ void generate_pop(char* var_id)
 void generate_declare_variable(char* var_id)
 {
 	add_code("DEFVAR LF@"); add_code(var_id); add_code("\n");
+	add_code("MOVE LF@"); add_code(var_id); add_code(" nil@nil"); add_code("\n");
 }
 
 void generate_init_variable(char* var_id, sym_tab_datatype type)
