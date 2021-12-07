@@ -362,6 +362,9 @@ void generate_function_write()
 	add_code("JUMPIFEQ end_loop2 GF@tmp2 bool@false \n");
 	add_code("POPS GF@tmp2\n");
 	add_code("SUB GF@tmp1 GF@tmp1 int@1\n");
+	add_code("JUMPIFNEQ __skip__ GF@tmp2 nil@nil \n");
+	add_code("WRITE string@nil\n");
+	add_code("LABEL __skip__\n");
 	add_code("WRITE GF@tmp2\n");
 	add_code("JUMP loop2\n");
 	add_code("LABEL end_loop2\n");
