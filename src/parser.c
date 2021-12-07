@@ -763,19 +763,21 @@ bool st_if() {
 
     GET_NEXT_TOKEN();
     push(&scope);
+    generate_start_of_else(local_if_index, local_if_index);
 
     if (!st_list()) {
         pop(&scope);
         return false;
     }
-    generate_start_of_else(local_if_index, local_if_index);
+
+    generate_end_of_else(local_if_index);
 
     pop(&scope);
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         return false;
     }
-    generate_end_of_else(local_if_index);
+
     GET_NEXT_TOKEN();
     return true;
 }
@@ -1083,7 +1085,7 @@ bool fnc_id() {
                 }
             } else if (is_type_data()) {
                 if (get_type_to_sym_type() != typ->datatype) {
-                    ERROR = TYPE_INCOMPATIBILITY_ERR;
+                    ERROR = PARAMETERS_ERR;
                     return false;
 
                 }
