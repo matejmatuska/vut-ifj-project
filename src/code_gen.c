@@ -209,6 +209,18 @@ void generate_operand(token_t* operand)
 		add_code_float(operand->attribute.double_value);
 		add_code("p+0");
 		break;
+	case TOKEN_TYPE_EXP:
+		add_code(" float@0x");
+		add_code_float(operand->attribute.double_value);
+		add_code("p+0");
+		break;
+
+	case TOKEN_TYPE_SIGN_EXP:
+		add_code(" float@0x");
+		add_code_float(operand->attribute.double_value);
+		add_code("p+0");
+		break;
+
 	case TOKEN_TYPE_KW:
 		if (operand->attribute.keyword == KW_NIL)
 			add_code(" nil@nil");
