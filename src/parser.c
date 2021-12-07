@@ -582,6 +582,11 @@ bool st_local() {
         return false;
     }
 
+        if(isfunc(&scope, ID_NAME())){
+            ERROR = UNDEFINED_ERR;
+            return false;
+        }
+
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
         ERROR = SYNTAX_ERR;
@@ -620,7 +625,7 @@ bool st_local() {
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
-        } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH)) {
+        } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH) || TOK_IS_KW(KW_NIL)) {
             if (!expr(&par_type, &num)) {
                 return false;
             } else if (num > 0) {
@@ -1025,6 +1030,7 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                 return false;
             }
             index++;
+            generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
             generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, tmp_name->datatype);
             tmp_name = tmp_name->next;
             tmp_type = tmp_type->next;
@@ -1144,12 +1150,12 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     } else {
         GET_NEXT_TOKEN();
         if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+
+//            generate_push(token);
+            generate_call_of_the_func(name->s);
             if (!check_returns(var_type, item, var_num)) {
                 return false;
             }
-            generate_push(token);
-            generate_call_of_the_func(name->s);
-
             dyn_str_free(name);
             GET_NEXT_TOKEN();
             return true;
@@ -1366,7 +1372,7 @@ bool expr(name_and_data *types, int *num) {
             return true;
         }
 
-        if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
+        if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER) || typ == T_NIL) {
             generate_pop((*types)->string->s);
             *types = (*types)->next;
 
@@ -1428,7 +1434,7 @@ bool next_type(data_type *types, int *num) {
 }
 
 bool is_type() {
-    if (TOK_IS_KW(KW_INTEGER) || TOK_IS_KW(KW_NUMBER) || TOK_IS_KW(KW_STRING))
+    if (TOK_IS_KW(KW_INTEGER) || TOK_IS_KW(KW_NUMBER) || TOK_IS_KW(KW_STRING) || TOK_IS_KW(KW_NIL))
         return true;
     ERROR = SYNTAX_ERR;
     return false;
