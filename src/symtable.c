@@ -468,3 +468,23 @@ size_t sym_tab_size(const sym_tab_t *t)
 {
 	return t->size;
 }
+/**
+  * Check if all items in table are defined
+  * @param  sym_tab_t *t - specific symbol table
+  * @return true if all items are defined
+*/
+bool is_defined(sym_tab_t *t)
+{
+	bool defined = true;
+	sym_tab_item_t *item;
+	for (unsigned i = 0; i < t->arr_size; i++)
+	{
+		item = t->element[i];
+		while (item != NULL)
+		{
+			if(item->data.defined == false)
+				defined = false;
+		}
+	}
+	return defined;
+}
