@@ -138,132 +138,18 @@ POPFRAME
 RETURN
 #end of the function chr
 
-#start of the function factorial
-LABEL factorial
-PUSHFRAME
-DEFVAR LF@n
-MOVE LF@n  LF@%1
-DEFVAR LF@retval1
-MOVE LF@retval1 int@0
-DEFVAR LF@n1
-MOVE LF@n1 int@0
-PUSHS LF@n
-PUSHS int@1
-POPS GF@tmp1
-TYPE GF@tmp3 GF@tmp1
-JUMPIFEQ error_label GF@tmp3 string@nil
-POPS GF@tmp2
-TYPE GF@tmp3 GF@tmp2
-JUMPIFEQ error_label GF@tmp3 string@nil
-PUSHS GF@tmp2
-PUSHS GF@tmp1
-SUBS
-
-POPS LF@n1
-PUSHS LF@n
-PUSHS int@2
-POPS GF@tmp1
-TYPE GF@tmp3 GF@tmp1
-JUMPIFEQ error_label GF@tmp3 string@nil
-POPS GF@tmp2
-TYPE GF@tmp3 GF@tmp2
-JUMPIFEQ error_label GF@tmp3 string@nil
-PUSHS GF@tmp2
-PUSHS GF@tmp1
-LTS
-POPS GF@tmp1
-JUMPIFEQ end_if1 GF@tmp1 bool@false
-PUSHS int@1
-POPS LF@retval1
-DEFVAR LF@tmp
-MOVE LF@tmp int@0
-CREATEFRAME
-PUSHS LF@n1
-DEFVAR TF@%1
-POPS TF@%1
-CALL factorial
-MOVE LF@tmp TF@retval1
-PUSHS LF@n
-PUSHS LF@tmp
-POPS GF@tmp1
-TYPE GF@tmp3 GF@tmp1
-JUMPIFEQ error_label GF@tmp3 string@nil
-POPS GF@tmp2
-TYPE GF@tmp3 GF@tmp2
-JUMPIFEQ error_label GF@tmp3 string@nil
-PUSHS GF@tmp2
-PUSHS GF@tmp1
-MULS
-
-POPS LF@retval1
-JUMP end_else1
-LABEL end_if1
-LABEL end_else1
-POPFRAME
-RETURN
-#end of the function factorial
-
 #start of the function main
 LABEL main
 PUSHFRAME
+DEFVAR LF@str
+MOVE LF@str string@
+PUSHS string@".\010.\009.\092.
+POPS LF@str
 CREATEFRAME
-PUSHS string@Zadejte\032cislo\032pro\032vypocet\032faktorialu:\032
-PUSHS int@1
-CALL write
-DEFVAR LF@a
-MOVE LF@a int@0
-CREATEFRAME
-CALL readi
-MOVE LF@a TF@retval1
-PUSHS LF@a
-EQS
-
-NOTS
-
-POPS GF@tmp1
-JUMPIFEQ end_if2 GF@tmp1 bool@false
-PUSHS LF@a
-PUSHS int@0
-POPS GF@tmp1
-TYPE GF@tmp3 GF@tmp1
-JUMPIFEQ error_label GF@tmp3 string@nil
-POPS GF@tmp2
-TYPE GF@tmp3 GF@tmp2
-JUMPIFEQ error_label GF@tmp3 string@nil
-PUSHS GF@tmp2
-PUSHS GF@tmp1
-LTS
-POPS GF@tmp1
-JUMPIFEQ end_if3 GF@tmp1 bool@false
-CREATEFRAME
-PUSHS string@Faktorial\032nejde\032spocitat!
 PUSHS string@\010
+PUSHS LF@str
 PUSHS int@2
 CALL write
-DEFVAR LF@vysl
-MOVE LF@vysl int@0
-CREATEFRAME
-PUSHS LF@a
-DEFVAR TF@%1
-POPS TF@%1
-CALL factorial
-MOVE LF@vysl TF@retval1
-CREATEFRAME
-PUSHS string@Vysledek\032je\032
-PUSHS LF@vysl
-PUSHS string@\010
-PUSHS int@3
-CALL write
-JUMP end_else3
-LABEL end_if3
-LABEL end_else3
-CREATEFRAME
-PUSHS string@Chyba\032pri\032nacitani\032celeho\032cisla!\010
-PUSHS int@1
-CALL write
-JUMP end_else2
-LABEL end_if2
-LABEL end_else2
 POPFRAME
 RETURN
 #end of the function main

@@ -140,16 +140,17 @@ int parse() {
 
     code_gen_init();
 
-    int result = program();
+    program();
 
     free(token);
     free_ST_stack(&scope);
     if(ERROR == 0){
         code_in_to_file();
+        code_gen_free();
     }
 
-    code_gen_free();
-    return result;
+
+    return ERROR;
 }
 
 // <prog> -> require STRING <body> EOF
@@ -175,6 +176,11 @@ int program() {
     if (!body())
         return ERROR;
 
+    if(!is_defined(scope->localtable)){
+       ERROR = UNDEFINED_ERR;
+       return false;
+    }
+
     GET_NEXT_TOKEN();
     if (token->type != TOKEN_TYPE_EOF) {
         ERROR = SYNTAX_ERR;
@@ -199,14 +205,14 @@ bool body() {
             return false;
         }
         BLOCK_NUMBER = 0;
-    } else if (token->type == TOKEN_TYPE_ID) {
-        generate_start_of_program();
+    } else if (TOK_IS_ID) {
         if (isfunc(&scope, ID_NAME()) == true) {
+            generate_start_of_program();
             if (!fnc_id()) {
                 return false;
             }
         } else {
-            ERROR = UNDEFINED_ERR;
+            ERROR = SYNTAX_ERR;
             return false;
         }
     } else if (token->type == TOKEN_TYPE_EOF) {
@@ -896,7 +902,12 @@ bool write_next(int * index){
     GET_NEXT_TOKEN();
     (*index)++;
     if (is_term()) {
-
+        if(TOK_IS_ID){
+            if(scope_search(&scope, ID_NAME()) != NULL){
+                ERROR = UNDEFINED_ERR;
+                return false;
+            }
+        }
     } else {
         ERROR = SYNTAX_ERR;
         return false;
@@ -925,10 +936,23 @@ bool write(sym_tab_item_t *item) {
             return false;
         }
         GET_NEXT_TOKEN();
+
+        if (is_term()) {
+            if(TOK_IS_ID){
+                if(scope_search(&scope, ID_NAME()) == NULL){
+                    ERROR = UNDEFINED_ERR;
+                    return false;
+                }
+            }
+        } else {
+            ERROR = SYNTAX_ERR;
+            return false;
+        }
         token_t * tkn = copy_tkn();
             if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
                return true;
             }
+
 
             if(!write_next(&index)){
                 return false;
@@ -1487,7 +1511,8 @@ bool is_type() {
 }
 
 bool is_type_data() {
-    if (TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_STR) || TOK_IS_TYPE(TOKEN_TYPE_DOUBLE))
+    if (TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_STR) || TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) || TOK_IS_KW(KW_NIL) ||
+                                                                      TOK_IS_TYPE(TOKEN_TYPE_EXP) || TOK_IS_TYPE(TOKEN_TYPE_SIGN_EXP))
         return true;
     ERROR = SYNTAX_ERR;
     return false;

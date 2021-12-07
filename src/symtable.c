@@ -484,8 +484,9 @@ bool is_defined(sym_tab_t *t)
 		{
 			if(item->data.item_type == HT_FUNC && item->data.defined == false)
 				defined = false;
-			item =item->next;
-		}
+                item = item->next;
+        }
+
 	}
 	return defined;
 }
