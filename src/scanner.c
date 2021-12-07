@@ -756,11 +756,13 @@ int get_next_token(token_t* current_token)
             break;
 
         case COMPARING_STATE:
+            ungetc(c, source);
             current_token->type = TOKEN_TYPE_COMPARING;
                 return 0;
             break;
 
         case COLON_STATE:
+            ungetc(c, source);
             current_token->type = TOKEN_TYPE_COLON;
             return 0;
             break;
