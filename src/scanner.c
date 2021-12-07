@@ -741,6 +741,7 @@ int get_next_token(token_t* current_token)
 
         case COLON_STATE:
             current_token->type = TOKEN_TYPE_COLON;
+            ungetc(c,source);
             return 0;
             break;
 
