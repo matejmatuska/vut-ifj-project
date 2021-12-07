@@ -86,7 +86,7 @@ void generate_built_in_funcs();
 void generate_default_variable_value(sym_tab_datatype type);
 void add_code(char* inst);
 void add_code_int(int integer);
-void add_code_float(float integer);
+void add_code_float(double integer);
 void generate_operand(token_t* operand);
 void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type);
 void generate_nil_check();
