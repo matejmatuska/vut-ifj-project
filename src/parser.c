@@ -1232,7 +1232,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             } else if (is_type_data()) {
                 if (get_type_to_sym_type() != typ->datatype &&
                     !((typ->datatype == NUMBER && get_type_to_sym_type() == INTEGER) ||
-                      (typ->datatype == STRING || get_type_to_sym_type() == STRING))) {
+                      (typ->datatype == STRING || get_type_to_sym_type() == STRING)) && !TOK_IS_KW(KW_NIL)) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
                 }
@@ -1391,7 +1391,7 @@ bool exp_list(data_type *types, int *num) {
     if (parse_expr(token, scope, &typ) != 0) {
         return false;
     } else if ((*types) != NULL) {
-        if (typ != sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
+        if (typ != sym_data_to_data_type((*types)->datatype) && typ != T_NIL && !(typ == T_INT && (*types)->datatype == NUMBER) ) {
             ERROR = TYPE_INCOMPATIBILITY_ERR;
             return false;
         } else if (num_of_ret < *num) {
