@@ -58,6 +58,8 @@ int if_index = 0;
 
 int while_index = 0;
 
+token_t * copy_tkn();
+
 int program();
 
 bool body();
@@ -625,7 +627,8 @@ bool st_local() {
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
-        } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH) || TOK_IS_KW(KW_NIL)) {
+        } else if (is_type_data() || TOK_IS_TYPE(TOKEN_TYPE_LEFTB) || TOK_IS_TYPE(TOKEN_TYPE_LENGTH) || TOK_IS_KW(KW_NIL) ||
+                TOK_IS_TYPE(TOKEN_TYPE_EXP) || TOK_IS_TYPE(TOKEN_TYPE_SIGN_EXP)) {
             if (!expr(&par_type, &num)) {
                 return false;
             } else if (num > 0) {
@@ -880,6 +883,37 @@ bool fnc_expr(data_type *types, int *num, int par_index) {
     return false;
 }
 
+bool write_next(int * index){
+
+   GET_NEXT_TOKEN();
+   if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        return true;
+    }
+    if (!TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+    GET_NEXT_TOKEN();
+    (*index)++;
+    if (is_term()) {
+
+    } else {
+        ERROR = SYNTAX_ERR;
+        return false;
+    }
+    token_t * tkn = copy_tkn();
+
+
+
+    if(!write_next(index)){
+        free(tkn);
+        return false;
+    }
+    generate_param_for_write(tkn);
+    free(tkn);
+    return true;
+}
+
 bool write(sym_tab_item_t *item) {
 
     if (strcmp((char *) item->key, "write") == 0) {
@@ -891,10 +925,20 @@ bool write(sym_tab_item_t *item) {
             return false;
         }
         GET_NEXT_TOKEN();
-        while (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
+        token_t * tkn = copy_tkn();
+            if(TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)){
+               return true;
+            }
+
+            if(!write_next(&index)){
+                return false;
+            }
             index++;
+            generate_param_for_write(tkn);
+/*        while ()) {
+
             if (is_term()) {
-                generate_param_for_write(token);
+
             } else {
                 ERROR = SYNTAX_ERR;
                 return false;
@@ -909,8 +953,10 @@ bool write(sym_tab_item_t *item) {
             }
             GET_NEXT_TOKEN();
         }
+        */
         generate_number_of_params(index);
         generate_call_of_the_func("write");
+        free(tkn);
         GET_NEXT_TOKEN();
         return true;
     } else {
@@ -1318,7 +1364,7 @@ bool next_exp(data_type *types, int *num, int *num_of_ret) {
     if (parse_expr(token, scope, &typ) != 0) {
         return false;
     } else if ((*types) != NULL) {
-        if (typ != sym_data_to_data_type((*types)->datatype) && !(typ == T_INT && (*types)->datatype == NUMBER)) {
+        if (typ != sym_data_to_data_type((*types)->datatype) && !(typ == T_INT && (*types)->datatype == NUMBER) && typ != T_NIL) {
             ERROR = TYPE_INCOMPATIBILITY_ERR;
             return false;
         } else if (*num_of_ret < *num) {
@@ -1635,4 +1681,42 @@ int number_of_rec(){
     }
 
     return index;
+}
+
+token_t * copy_tkn(){
+    token_t * tkn = malloc(sizeof(token_t));
+    token_init(tkn);
+    dynamic_string_t *  dn_st = malloc(sizeof(dynamic_string_t));
+    dyn_str_init(dn_st);
+    for (size_t i = 0; i < token->attribute.string->size; i++)
+    {
+        dyn_str_add_character(dn_st, token->attribute.string->s[i]);
+    }
+    tkn->type = token->type;
+
+
+    switch (tkn->type)
+    {
+        case TOKEN_TYPE_ID:
+        case TOKEN_TYPE_STR:
+            tkn->attribute.string = dn_st;
+            break;
+        case TOKEN_TYPE_INT:
+            tkn->attribute.integer_value = token->attribute.integer_value;
+            break;
+        case TOKEN_TYPE_DOUBLE:
+        case TOKEN_TYPE_EXP:
+        case TOKEN_TYPE_SIGN_EXP:
+            tkn->attribute.double_value = token->attribute.double_value;
+            break;
+        case TOKEN_TYPE_KW:
+            tkn->attribute.keyword = token->attribute.keyword;
+            break;
+
+
+        default:
+            break;
+    }
+
+    return tkn;
 }
