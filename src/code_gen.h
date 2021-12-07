@@ -43,8 +43,9 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 //
 
 //
-void generate_start_of_program();
-void generate_end_of_program();// generates the end of the main func
+void generate_start_of_program(int index);
+void generate_continue_of_program(int next_index);// generates the end of the main func
+void generate_end_of_program();
 //
 
 //expresion generation
