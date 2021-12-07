@@ -459,6 +459,8 @@ static data_type_t get_token_data_type(token_t token)
         case TOKEN_TYPE_INT:
             return T_INT;
         case TOKEN_TYPE_DOUBLE:
+        case TOKEN_TYPE_EXP:
+        case TOKEN_TYPE_SIGN_EXP:
             return T_NUMBER;
         case TOKEN_TYPE_STR:
             return T_STRING;
