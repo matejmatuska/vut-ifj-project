@@ -401,8 +401,10 @@ int get_next_token(token_t* current_token)
         case BLOCK_COMMENT_STATE:
             if (c == ']')
                 state = POTENTIAL_END_OF_BLOCK_COMMENT_STATE;
-            else if (c == '\n' || c == EOF)
-                state = START_STATE;
+            else if (c == EOF)
+            {
+                error(LEX_ERR,value)
+            }
             else
                 state = BLOCK_COMMENT_STATE;
             break;
