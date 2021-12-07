@@ -41,7 +41,7 @@ void add_code_int(int integer)
 	
 }
 
-void add_code_float(float integer)
+void add_code_float(double integer)
 {
 	
 	char tmp[40];
