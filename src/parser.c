@@ -1041,8 +1041,11 @@ bool fnc_id() {
     par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
+
     if (item->data.params != 0) {
-        for (int i = 0; i < item->data.params; ++i) {
+        int i = 0;
+        while ( i < item->data.params) {
+
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;
@@ -1071,14 +1074,16 @@ bool fnc_id() {
                 if (get_type_to_sym_type() != typ->datatype) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
-                }
 
+                }
+                generate_push(token);
             }
+            i++;
             generate_param_before_call(i, token);
             typ = item->data.param_data_types->next;
             GET_NEXT_TOKEN();
 
-            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1) {
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params) {
                 break;
             } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;
