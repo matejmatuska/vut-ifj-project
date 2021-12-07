@@ -1093,7 +1093,7 @@ bool fnc_id() {
             }
             i++;
             generate_param_before_call(i, token);
-            typ = item->data.param_data_types->next;
+            typ = typ->next;
             GET_NEXT_TOKEN();
 
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params) {
@@ -1102,7 +1102,7 @@ bool fnc_id() {
                 ERROR = PARAMETERS_ERR;
                 return false;
             } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
-                if (i == item->data.params - 1) {
+                if (i > item->data.params) {
                     ERROR = PARAMETERS_ERR;
                     return false;
                 }
@@ -1556,8 +1556,9 @@ bool is_type() {
 }
 
 bool is_type_data() {
-    if (TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_STR) || TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) || TOK_IS_KW(KW_NIL) ||
-                                                                      TOK_IS_TYPE(TOKEN_TYPE_EXP) || TOK_IS_TYPE(TOKEN_TYPE_SIGN_EXP))
+    if (TOK_IS_TYPE(TOKEN_TYPE_INT) || TOK_IS_TYPE(TOKEN_TYPE_STR) ||
+            TOK_IS_TYPE(TOKEN_TYPE_DOUBLE) || TOK_IS_KW(KW_NIL) ||
+            TOK_IS_TYPE(TOKEN_TYPE_EXP) || TOK_IS_TYPE(TOKEN_TYPE_SIGN_EXP))
         return true;
     ERROR = SYNTAX_ERR;
     return false;
