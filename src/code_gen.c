@@ -171,6 +171,14 @@ dynamic_string_t* convert_string(char* string)
 		{
 			dyn_str_add_string(tmp, "\\010");
 		}
+        else if(string[i] == '\t')
+        {
+            dyn_str_add_string(tmp, "\\009");
+        }
+        else if(string[i] == '\\')
+        {
+            dyn_str_add_string(tmp, "\\092");
+        }
 		else
 			dyn_str_add_character(tmp, string[i]);
 		i++;
