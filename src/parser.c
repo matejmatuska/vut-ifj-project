@@ -638,7 +638,7 @@ bool st_local() {
 
     par_type = create_name_data(get_datatype(), name);
     data_type par_typ = name_to_type(par_type);
-    generate_init_variable(name->s, get_datatype());
+//   generate_init_variable(name->s, get_datatype());
 
     num = 1;
 
