@@ -584,6 +584,7 @@ static int analyze(token_t *token, sym_stack_t *stack, data_type_t *res_type)
     symbol_t *top_term = sym_stack_top_terminal(stack);
     sym_type_t curr_sym = token_to_sym_type(*token);
 
+    bool detected_end = false;
     while (!(curr_sym == S_DOLLAR && top_term->type == S_DOLLAR))
     {
         int result = SYNTAX_ERR;
@@ -613,11 +614,11 @@ static int analyze(token_t *token, sym_stack_t *stack, data_type_t *res_type)
                 if (result != SYNTAX_OK)
                     return result;
 
-                *res_type = sym_stack_top(stack)->data_type;
-                return SYNTAX_OK;
+                detected_end = true; // we found end, force DOLLAR symbol
+                break;
         }
         top_term = sym_stack_top_terminal(stack);
-        curr_sym = token_to_sym_type(*token);
+        curr_sym = detected_end ? S_DOLLAR : token_to_sym_type(*token);
     }
 
     *res_type = sym_stack_top(stack)->data_type;
