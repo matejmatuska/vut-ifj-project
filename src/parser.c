@@ -43,6 +43,27 @@ token_t *token;
         }                                           \
     } while (0)
 
+int call_index = 0;
+
+bool in_gf = false;
+
+#define CHECK_GLOBALFRAME \
+    if(in_gf) {             \
+ \
+    \
+    } else {                \
+    in_gf = true;           \
+    call_index++;           \
+    generate_start_of_program(call_index);  \
+    \
+    }
+
+#define CHECK_LOCALFRAME \
+    if(in_gf) {          \
+    in_gf = false;       \
+    generate_continue_of_program(call_index);\
+    }
+
 
 int ERROR = 0;
 
@@ -196,18 +217,21 @@ bool body() {
     } else
         GET_NEXT_TOKEN();
     if (TOK_IS_KW(KW_GLOBAL)) {
+        CHECK_GLOBALFRAME
         if (!glob_def()) {
             return false;
         }
 
     } else if (TOK_IS_KW(KW_FUNCTION)) {
+        CHECK_LOCALFRAME
         if (!fnc_def()) {
             return false;
         }
         BLOCK_NUMBER = 0;
     } else if (TOK_IS_ID) {
+
         if (isfunc(&scope, ID_NAME()) == true) {
-            generate_start_of_program();
+            CHECK_GLOBALFRAME
             if (!fnc_id()) {
                 return false;
             }
