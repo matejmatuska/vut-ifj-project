@@ -1131,7 +1131,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
                 ERROR = PARAMETERS_ERR;
                 return false;
             } else if (TOK_IS_TYPE(TOKEN_TYPE_COLON)) {
-                if (i == item->data.params - 1) {
+                if (i == item->data.params) {
                     ERROR = PARAMETERS_ERR;
                     return false;
                 }
@@ -1359,23 +1359,21 @@ bool expr(name_and_data *types, int *num) {
     //generate variable and type
     ERROR = parse_expr(token, scope, &typ);
 
-    if (ERROR == 0 && *types != NULL) {
+    if (ERROR == 0 && *types != NULL ) {
         if (dyn_str_compare((*types)->string, "bool")) {
 
             *num -= 1;
             return true;
         }
-        if (TOK_IS_ID) {
-            *num -= 1;
-            generate_pop((*types)->string->s);
-            return true;
-        }
+
         if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
             generate_pop((*types)->string->s);
             *types = (*types)->next;
 
             *num -= 1;
-
+            if (TOK_IS_ID) {
+                return true;
+            } else
             if (!expr(types, num)) {
                 return false;
             }
