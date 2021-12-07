@@ -43,8 +43,9 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 //
 
 //
-void generate_start_of_program();
-void generate_end_of_program();// generates the end of the main func
+void generate_start_of_program(int index);
+void generate_continue_of_program(int next_index);// generates the end of the main func
+void generate_end_of_program();
 //
 
 //expresion generation
@@ -85,7 +86,7 @@ void generate_built_in_funcs();
 void generate_default_variable_value(sym_tab_datatype type);
 void add_code(char* inst);
 void add_code_int(int integer);
-void add_code_float(float integer);
+void add_code_float(double integer);
 void generate_operand(token_t* operand);
 void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type);
 void generate_nil_check();

@@ -43,6 +43,27 @@ token_t *token;
         }                                           \
     } while (0)
 
+int call_index = 0;
+
+bool in_gf = false;
+
+#define CHECK_GLOBALFRAME \
+    if(in_gf) {             \
+ \
+    \
+    } else {                \
+    in_gf = true;           \
+    call_index++;           \
+    generate_start_of_program(call_index);  \
+    \
+    }
+
+#define CHECK_LOCALFRAME \
+    if(in_gf) {          \
+    in_gf = false;       \
+    generate_continue_of_program(call_index);\
+    }
+
 
 int ERROR = 0;
 
@@ -196,18 +217,21 @@ bool body() {
     } else
         GET_NEXT_TOKEN();
     if (TOK_IS_KW(KW_GLOBAL)) {
+        CHECK_GLOBALFRAME
         if (!glob_def()) {
             return false;
         }
 
     } else if (TOK_IS_KW(KW_FUNCTION)) {
+        CHECK_LOCALFRAME
         if (!fnc_def()) {
             return false;
         }
         BLOCK_NUMBER = 0;
     } else if (TOK_IS_ID) {
+
         if (isfunc(&scope, ID_NAME()) == true) {
-            generate_start_of_program();
+            CHECK_GLOBALFRAME
             if (!fnc_id()) {
                 return false;
             }
@@ -245,6 +269,7 @@ bool fnc_def() {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
             sym_tab_add_data_function(item, ret_type, par_type, true, true, par_num, ret_num);
         } else {
+            sym_tab_add_data_function(item, item->data.return_data_types, item->data.param_data_types, true, true, item->data.params, item->data.returns);
             exist = true;
         }
     }
@@ -515,7 +540,7 @@ bool next_retype(data_type *types, int *num) {
     *types = add_data_type(*types, get_datatype());
     (*num)++;
     generate_retval(*num, get_datatype());
-    return next_type(types, num);
+    return next_retype(types, num);
 
 }
 
@@ -1017,8 +1042,11 @@ bool fnc_id() {
     //par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
+
     if (item->data.params != 0) {
-        for (int i = 0; i < item->data.params; ++i) {
+        int i = 0;
+        while ( i < item->data.params) {
+
             GET_NEXT_TOKEN();
             if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;
@@ -1047,14 +1075,16 @@ bool fnc_id() {
                 if (get_type_to_sym_type() != typ->datatype) {
                     ERROR = TYPE_INCOMPATIBILITY_ERR;
                     return false;
-                }
 
+                }
+                generate_push(token);
             }
+            i++;
             generate_param_before_call(i, token);
             typ = item->data.param_data_types->next;
             GET_NEXT_TOKEN();
 
-            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params - 1) {
+            if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB) && i == item->data.params) {
                 break;
             } else if (TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
                 ERROR = PARAMETERS_ERR;

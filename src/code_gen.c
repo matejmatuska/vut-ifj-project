@@ -41,11 +41,11 @@ void add_code_int(int integer)
 	
 }
 
-void add_code_float(float integer)
+void add_code_float(double integer)
 {
 	
 	char tmp[40];
-	sprintf(tmp, "%f", integer);
+	sprintf(tmp, "%a", integer);
 	dyn_str_add_string(&code, tmp);
 	
 }
@@ -133,6 +133,8 @@ void generate_default_variable_value(sym_tab_datatype type)
 	case NIL:
 		add_code("nil@nil");
 		break;
+	default:
+		break;
 	}
 }
 
@@ -205,20 +207,17 @@ void generate_operand(token_t* operand)
 		dyn_str_free(tmp);
 		break;
 	case TOKEN_TYPE_DOUBLE:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 	case TOKEN_TYPE_EXP:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 
 	case TOKEN_TYPE_SIGN_EXP:
-		add_code(" float@0x");
+		add_code(" float@");
 		add_code_float(operand->attribute.double_value);
-		add_code("p+0");
 		break;
 
 	case TOKEN_TYPE_KW:
@@ -319,15 +318,7 @@ void generate_function_substr()
 	generate_declare_variable("length");
 	generate_declare_variable("tmp");
 	generate_declare_variable("sign");
-	/*
-	add_code("TYPE tmp LF@s\n");
-	add_code("JUMPIFEQ exit8_label LF@tmp string@nil\n");
-	add_code("TYPE tmp LF@i\n");
-	add_code("JUMPIFEQ exit8_label LF@tmp string@nil\n");
-	add_code("TYPE tmp LF@j\n");
-	add_code("JUMPIFEQ exit8_label LF@tmp string@nil\n");
-	*/
-
+	
 	add_code("STRLEN LF@length LF@s\n");
 	add_code("GT LF@tmp LF@i LF@length\n");
 	add_code("JUMPIFEQ return_label3 LF@tmp bool@true\n");
@@ -347,10 +338,7 @@ void generate_function_substr()
 	add_code("GT LF@tmp LF@i LF@j\n");
 	add_code("JUMPIFEQ return_label3 LF@tmp bool@true\n");
 	add_code("JUMP loop\n");
-	/*
-	add_code("LABEL exit8_label\n");
-	add_code("EXIT 8\n");
-	*/
+	
 	add_code("LABEL return_label3\n");
 	generate_end_of_the_func("substr");
 }
@@ -425,7 +413,7 @@ void generate_program_head()
 	add_code("DEFVAR GF@tmp1\n");
 	add_code("DEFVAR GF@tmp2\n");
 	add_code("DEFVAR GF@tmp3\n");
-	add_code("JUMP __MAIN__\n");
+	add_code("JUMP __MAIN__1\n");
 	add_code("\n");
 	add_code("LABEL error_label\n");
 	add_code("CLEARS\n");
@@ -434,12 +422,18 @@ void generate_program_head()
 	generate_built_in_funcs();
 }
 
-void generate_start_of_program()
+void generate_start_of_program(int index)
 {
-	add_code("LABEL __MAIN__\n");
+	add_code("LABEL __MAIN__"); add_code_int(index); add_code("\n");
 	add_code("CREATEFRAME\n");
 	add_code("PUSHFRAME\n");
 	
+}
+
+void generate_continue_of_program(int next_index)
+{
+	add_code("POPFRAME\n");
+	add_code("JUMP __MAIN__"); add_code_int(next_index + 1); add_code("\n");
 }
 
 void generate_end_of_program()
