@@ -249,7 +249,7 @@ bool fnc_def() {
     }
     generate_start_of_the_func(ID_NAME());
     push(&scope);
-    generate_explicit_fnc();
+  //  generate_explicit_fnc();
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
         ERROR = SYNTAX_ERR;
@@ -447,7 +447,7 @@ bool next_param(data_type *par_type, int *num) {
     GET_NEXT_TOKEN();
     if (!TOK_IS_ID)
         return false;
-
+    (*num)++;
     generate_func_param_assign(ID_NAME(), *num);
     sym_tab_item_t *item;
     item = sym_tab_add_item(top_table(scope), ID_NAME());
@@ -461,7 +461,7 @@ bool next_param(data_type *par_type, int *num) {
     if (!is_type())
         return false;
     add_data_type(*par_type, get_datatype());
-    (*num)++;
+
     sym_tab_add_data_var(item, create_data_type(get_datatype()), true, false);
     if (next_param(par_type, num))
         return true;
@@ -903,7 +903,7 @@ bool write_next(int * index){
     (*index)++;
     if (is_term()) {
         if(TOK_IS_ID){
-            if(scope_search(&scope, ID_NAME()) != NULL){
+            if(scope_search(&scope, ID_NAME()) == NULL){
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
