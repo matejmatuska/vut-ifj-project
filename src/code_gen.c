@@ -548,24 +548,24 @@ void generate_end_of_while(int while_index)
 void generate_start_of_if(int if_index)
 {
 	add_code("POPS GF@tmp1\n");
-	add_code("JUMPIFEQ end_if"); add_code_int(if_index); add_code(" GF@tmp1 bool@false\n");
+	add_code("JUMPIFEQ end_if"); add_code_index(if_index); add_code(" GF@tmp1 bool@false\n");
 
 }
 
 void generate_start_of_else(int else_index, int if_index)
 {
-	add_code("JUMP end_else"); add_code_int(else_index); add_code("\n");
-	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
+	add_code("JUMP end_else"); add_code_index(else_index); add_code("\n");
+	add_code("LABEL end_if"); add_code_index(if_index); add_code("\n");
 }
 
 void generate_end_of_else(int else_index)
 {
-	add_code("LABEL end_else"); add_code_int(else_index); add_code("\n");
+	add_code("LABEL end_else"); add_code_index(else_index); add_code("\n");
 }
 
 void generate_end_of_if(int if_index)
 {
-	add_code("LABEL end_if"); add_code_int(if_index); add_code("\n");
+	add_code("LABEL end_if"); add_code_index(if_index); add_code("\n");
 }
 
 void generate_nil_check()
