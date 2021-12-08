@@ -1,0 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Martin Pokorný, xpokor85
+Júlia Mazáková, xmazak02
+Matej Matuška, xmatus36
+Matěj Schäfer, xschaf00
+*/
