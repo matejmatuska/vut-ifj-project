@@ -1297,8 +1297,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             }
 
             if (TOK_IS_ID) {
-                size_t uid;
-                size_t level;
+
                 sym_tab_item_t *id = scope_search(scope, ID_NAME(), &uid, &level);
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;

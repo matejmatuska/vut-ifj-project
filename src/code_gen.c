@@ -614,7 +614,7 @@ void generate_start_of_while_head(int while_index)
 void generate_start_of_while(int while_index)
 {
 	add_code("POPS GF@tmp?1\n");
-	add_code("JUMPIFEQ end_while"); add_code_index(while_index); add_code(" GF@tmp1 bool@false\n");
+	add_code("JUMPIFEQ end_while"); add_code_index(while_index); add_code(" GF@tmp?1 bool@false\n");
 }
 
 void generate_end_of_while(int while_index)
@@ -626,7 +626,7 @@ void generate_end_of_while(int while_index)
 void generate_start_of_if(int if_index)
 {
 	add_code("POPS GF@tmp?1\n");
-	add_code("JUMPIFEQ end_if"); add_code_index(if_index); add_code(" GF@tmp1 bool@false\n");
+	add_code("JUMPIFEQ end_if"); add_code_index(if_index); add_code(" GF@tmp?1 bool@false\n");
 
 }
 
