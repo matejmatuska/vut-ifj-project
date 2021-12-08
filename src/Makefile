@@ -14,7 +14,7 @@ all: $(BIN)
 run: $(BIN)
 	./$(BIN)
 
-$(BIN): main.c scanner.o parser.o dynamic_string.o symtable.o ST_stack.o expr_parser.o symbol_stack.o code_gen.o
+$(BIN): main.c scanner.o parser.o dynamic_string.o symtable.o ST_stack.o expr_parser.o sym_stack.o code_gen.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: test

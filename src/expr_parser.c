@@ -7,7 +7,7 @@ Matej Matuška, xmatus36
 #include <stdbool.h>
 
 #include "expr_parser.h"
-#include "symbol_stack.h"
+#include "sym_stack.h"
 
 #include "scanner.h"
 #include "ST_stack.h"
@@ -331,7 +331,6 @@ static int rule_length(data_type_t dtype, data_type_t *res_type)
     if (dtype != T_STRING)
         return UNDEFINED_ERR;
 
-    //TODO generate code for string length
     *res_type = T_INT;
     return SYNTAX_OK;
 }
@@ -453,13 +452,13 @@ static sym_type_t token_to_sym_type(token_t token)
 /**
  * Returns data type of the token
  */
-static data_type_t get_token_data_type(token_t token)
+static data_type_t get_token_data_type(token_t token, size_t *uid, size_t *level)
 {
     if (token.type == TOKEN_TYPE_ID)
     {
         // adapt symtable api to our api
         sym_tab_key_t key = token.attribute.string->s;
-        sym_tab_item_t *item = scope_search(&ststack, key);
+        sym_tab_item_t *item = scope_search(ststack, key, uid, level);
         if (!item || !item->data.return_data_types)
             return T_UNKNOWN; // the variable is not defined
 
@@ -503,9 +502,9 @@ static data_type_t get_token_data_type(token_t token)
  * @return error code
  */
 static int shift(sym_stack_t *stack, token_t *token,
-        sym_type_t sym, data_type_t dtype)
+        sym_type_t sym, data_type_t data_type)
 {
-    if (!sym_stack_push(stack, sym, dtype))
+    if (!sym_stack_push(stack, sym, data_type))
         return INTERNAL_ERR;
 
     if (get_next_token(token) == LEX_ERR)
@@ -522,17 +521,21 @@ static int shift(sym_stack_t *stack, token_t *token,
  * @return error code
  */
 static int shift_w_handle(sym_stack_t *stack, token_t *token,
-        sym_type_t sym, data_type_t dtype)
+        sym_type_t sym)
 {
+    size_t var_uid;
+    size_t var_level;
+    data_type_t data_type = get_token_data_type(*token, &var_uid, &var_level);
+
     if (!sym_stack_insert_handle(stack))
         return INTERNAL_ERR;
 
     if (sym == S_INT_LIT || sym == S_STR_LIT || sym == S_NUM_LIT || sym == S_ID || sym == S_NIL)
     {
-        generate_push(token);
+        generate_push(token, var_level, var_uid);
     }
 
-    shift(stack, token, sym, dtype);
+    shift(stack, token, sym, data_type);
 
     return SYNTAX_OK;
 }
@@ -588,7 +591,8 @@ static int check_end_of_expr()
         return_token(next);
         return SYNTAX_OK;
     }
-    //TODO free token in case of error
+    token_free(next);
+    free(next);
     return SYNTAX_ERR;
 }
 
@@ -614,17 +618,16 @@ static int analyze(token_t *token, sym_stack_t *stack, data_type_t *res_type)
     while (!(curr_sym == S_DOLLAR && top_term->type == S_DOLLAR))
     {
         int result = SYNTAX_ERR;
-        data_type_t data_type = get_token_data_type(*token);
         switch (lookup_operation(top_term->type, curr_sym))
         {
             case S: // shift
-                result = shift(stack, token, curr_sym, data_type);
+                result = shift(stack, token, curr_sym, T_UNKNOWN);
                 if (result != SYNTAX_OK)
                     return result;
                 break;
 
             case H: // shift with handle
-                result = shift_w_handle(stack, token, curr_sym, data_type);
+                result = shift_w_handle(stack, token, curr_sym);
                 if (result != SYNTAX_OK)
                     return result;
                 break;

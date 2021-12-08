@@ -166,13 +166,15 @@ void delete_data_name(name_and_data *first)
   * @return sym_tab_t * - initialized symbol table
 */
 
-sym_tab_t *sym_tab_init()
+sym_tab_t *sym_tab_init(size_t uid, size_t nest_level)
 {
 	sym_tab_t *sym_table = malloc(sizeof(sym_tab_t) + MAX * sizeof(sym_tab_item_t *));
 	if (sym_table == NULL)
 	{
 		return NULL;
 	}
+    sym_table->uid = uid;
+    sym_table->nest_level = nest_level;
 	sym_table->size = 0;
 	sym_table->arr_size = MAX;
 	for (size_t i = 0; i < MAX; i++)
@@ -439,7 +441,7 @@ void sym_tab_free(sym_tab_t *t)
 */
 sym_tab_t *sym_tab_move(sym_tab_t *from)
 {
-	sym_tab_t *t = sym_tab_init();
+	sym_tab_t *t = sym_tab_init(from->uid, from->nest_level);
 
 	for (unsigned i = 0; i < from->arr_size; i++)
 	{

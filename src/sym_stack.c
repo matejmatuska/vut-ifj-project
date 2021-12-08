@@ -5,7 +5,7 @@ Matej Matuška, xmatus36
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "symbol_stack.h"
+#include "sym_stack.h"
 
 static bool is_empty(const sym_stack_t *stack)
 {
@@ -16,10 +16,7 @@ static bool is_empty(const sym_stack_t *stack)
 bool sym_stack_insert_handle(sym_stack_t *stack)
 {
     if (is_empty(stack))
-    {
-        //TODO error
         return false;
-    }
 
     // if the top symbol is non-terminal just push the handle
     if (stack->top && stack->top->type != S_NON_TERMINAL)
@@ -38,10 +35,8 @@ bool sym_stack_insert_handle(sym_stack_t *stack)
         {
             symbol_t *handle = malloc(sizeof(symbol_t));
             if (!handle)
-            {
-                //TODO
                 return false;
-            }
+
             handle->type = S_HANDLE;
 
             iter->next = handle;
