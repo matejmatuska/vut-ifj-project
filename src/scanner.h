@@ -5,6 +5,7 @@
 #include "dynamic_string.h"
 #include "error.h"
 
+//all possible types of tokens
 typedef enum
 {
   TOKEN_TYPE_ID,          // identificator
@@ -36,6 +37,7 @@ typedef enum
 
 } token_type;
 
+//all possible keywords
 typedef enum
 {
   KW_DO,
@@ -55,6 +57,7 @@ typedef enum
   KW_WHILE
 } keyword;
 
+// union of token attribute
 typedef union token_attribute
 {
   int integer_value;
@@ -63,13 +66,17 @@ typedef union token_attribute
   keyword keyword;
 } token_attribute_t;
 
+// struct of token
 typedef struct token
 {
   token_type type;
   union token_attribute attribute;
 } token_t;
 
+//functions with token
 int get_next_token(token_t* token);
+void return_token(token_t* token);
+
 void token_init(token_t* token);
 void token_free(token_t* token);
 void set_string(dynamic_string_t* string);

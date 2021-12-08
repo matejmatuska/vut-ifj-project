@@ -247,15 +247,31 @@ int make_id_or_kw(token_t *token, dynamic_string_t *value)
     return 0;
 }
 
+token_t *buffer;
+
+void return_token(token_t* token)
+{
+    buffer = token;
+}
+
 //main function , switch
 int get_next_token(token_t* current_token)
 {
+    token_free(current_token);
+
+    if (buffer)
+    {
+        *current_token = *buffer;
+        token_free(buffer);
+        free(buffer);
+        buffer = NULL;
+        return 0;
+    }
 
     //checking file
     if (source == NULL)
         return INTERNAL_ERR;
      
-    token_free(current_token);
 
     dynamic_string_t* value = NULL;
     
@@ -385,8 +401,10 @@ int get_next_token(token_t* current_token)
         case BLOCK_COMMENT_STATE:
             if (c == ']')
                 state = POTENTIAL_END_OF_BLOCK_COMMENT_STATE;
-            else if (c == '\n' || c == EOF)
-                state = START_STATE;
+            else if (c == EOF)
+            {
+                error(LEX_ERR,value)
+            }
             else
                 state = BLOCK_COMMENT_STATE;
             break;
@@ -723,6 +741,7 @@ int get_next_token(token_t* current_token)
 
         case COLON_STATE:
             current_token->type = TOKEN_TYPE_COLON;
+            ungetc(c,source);
             return 0;
             break;
 

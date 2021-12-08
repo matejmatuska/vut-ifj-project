@@ -1,44 +1,39 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "symbol_stack.h"
+#include "sym_stack.h"
 
-static bool is_empty(const symbol_stack_t *stack)
+static bool is_empty(const sym_stack_t *stack)
 {
     return stack->top == NULL;
 }
 
 // inserts handle after top terminal
-bool symbol_stack_insert_handle(symbol_stack_t *stack)
+bool sym_stack_insert_handle(sym_stack_t *stack)
 {
     if (is_empty(stack))
-    {
-        //TODO error
         return false;
-    }
 
     // if the top symbol is non-terminal just push the handle
-    if (stack->top && stack->top->type != NON_TERMINAL)
+    if (stack->top && stack->top->type != S_NON_TERMINAL)
     {
-        symbol_stack_push(stack, HANDLE);
+        sym_stack_push(stack, S_HANDLE, T_UNKNOWN);
         return true;
     }
 
     // else find the first non-terminal
     symbol_t *iter = stack->top;
-    while (iter && iter->type == NON_TERMINAL)
+    while (iter && iter->type == S_NON_TERMINAL)
     {
         // if next symbol is terminal insert handle
         symbol_t *next = iter->next;
-        if (next && next->type != NON_TERMINAL)
+        if (next && next->type != S_NON_TERMINAL)
         {
             symbol_t *handle = malloc(sizeof(symbol_t));
             if (!handle)
-            {
-                //TODO
                 return false;
-            }
-            handle->type = HANDLE;
+
+            handle->type = S_HANDLE;
 
             iter->next = handle;
             handle->next =next;
@@ -52,17 +47,12 @@ bool symbol_stack_insert_handle(symbol_stack_t *stack)
     return false;
 }
 
-typedef struct {
-    symbol_t *head;
-    int len;
-} symbol_list_t;
-
-symbol_t *symbol_stack_top_to_handle(symbol_stack_t *stack, int *count)
+symbol_t *sym_stack_top_to_handle(sym_stack_t *stack, int *count)
 {
     *count = 0;
 
     symbol_t *iter = stack->top;
-    while (iter && iter->type != HANDLE)
+    while (iter && iter->type != S_HANDLE)
     {
         (*count)++;
         iter = iter->next;
@@ -70,22 +60,22 @@ symbol_t *symbol_stack_top_to_handle(symbol_stack_t *stack, int *count)
     return stack->top;
 }
 
-symbol_t *symbol_stack_top_terminal(symbol_stack_t *stack)
+symbol_t *sym_stack_top_terminal(sym_stack_t *stack)
 {
     symbol_t *iter = stack->top;
-    while(iter && iter->type == NON_TERMINAL)
+    while(iter && iter->type == S_NON_TERMINAL)
     {
         iter = iter->next;
     }
     return iter;
 }
 
-void symbol_stack_init(symbol_stack_t *stack)
+void sym_stack_init(sym_stack_t *stack)
 {
     stack->top = NULL;
 }
 
-bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym)
+bool sym_stack_push(sym_stack_t *stack, sym_type_t sym, data_type_t dtype)
 {
     symbol_t *new = malloc(sizeof(symbol_t));
     if (!new)
@@ -93,12 +83,13 @@ bool symbol_stack_push(symbol_stack_t *stack, symbol_type_t sym)
         return false;
     }
     new->type = sym;
+    new->data_type = dtype;
     new->next = stack->top;
     stack->top = new;
     return true;
 }
 
-symbol_t *symbol_stack_top(symbol_stack_t *stack)
+symbol_t *sym_stack_top(sym_stack_t *stack)
 {
     if (is_empty(stack))
         return NULL;
@@ -106,7 +97,7 @@ symbol_t *symbol_stack_top(symbol_stack_t *stack)
     return stack->top;
 }
 
-bool symbol_stack_pop(symbol_stack_t *stack)
+bool sym_stack_pop(sym_stack_t *stack)
 {
     if (is_empty(stack))
         return false;
@@ -117,7 +108,7 @@ bool symbol_stack_pop(symbol_stack_t *stack)
     return true;
 }
 
-void symbol_stack_free(symbol_stack_t *stack)
+void sym_stack_free(sym_stack_t *stack)
 {
     symbol_t *iter = stack->top;
     while (iter != NULL)

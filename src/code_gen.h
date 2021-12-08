@@ -35,7 +35,7 @@ void generate_number_of_params(int params_amount);
 
 //pass parameter for general function 
 void generate_newframe(); // generates newframe before passing the parametrs of the function
-void generate_param_before_call(int index, token_t* param); //generates parameter pass before call
+void generate_param_before_call(int index); //generates parameter pass before call
 
 //call of the function and asign of the return values
 void generate_call_of_the_func(char* func_id); // calls the function

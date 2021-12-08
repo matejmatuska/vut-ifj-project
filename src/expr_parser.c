@@ -1,36 +1,56 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "scanner.h"
 #include "expr_parser.h"
-#include "symbol_stack.h"
+#include "sym_stack.h"
+
+#include "scanner.h"
+#include "ST_stack.h"
 #include "error.h"
+#include "symtable.h"
+#include "code_gen.h"
+
+#define ERR_IF_EITHER_NIL(type_a, type_b)           \
+    while (0) {                                     \
+        if ((type_a) == T_NIL || (type_b) == T_NIL) \
+            return NIL_ERR;                         \
+    }
+
+#define RET_IF_ERR(func, ...)           \
+    while (0) {                         \
+        int _res = (func)(__VA_ARGS__); \
+        if (_res != SYNTAX_OK)          \
+        return _res;                    \
+    }
+
+ST_stack *ststack = NULL;
 
 // parser operations
-typedef enum {
+enum ops {
     S, // shift
     R, // reduce
     H, // shift with handle
     E, // error
-} ops_t;
+};
 
 // assigned values are indices to the precedence lookup table
 typedef enum {
-    S_PLUS_MINUS = 0,
-    S_MUL_DIV_INTDIV = 1,
-    S_REL = 2,
-    S_LEN = 3,
-    S_CONCAT = 4,
-    S_L_PAREN = 5,
-    S_R_PAREN = 6,
-    S_VAL = 7,
-    S_DOLLAR = 8
+    PLUS_MINUS = 0,
+    MUL_DIV_INTDIV = 1,
+    REL = 2,
+    LEN = 3,
+    CONCAT = 4,
+    L_PAREN = 5,
+    R_PAREN = 6,
+    VAL = 7,
+    DOLLAR = 8
 } lookup_index_t;
 
 #define TABLE_SIZE 9
 
 // parser operation lookup table
-static ops_t op_lookup[TABLE_SIZE][TABLE_SIZE] = {
+static enum ops op_lookup[TABLE_SIZE][TABLE_SIZE] = {
     { R, H, R, H, R, H, R, H, R },
     { R, R, R, H, R, H, R, H, R },
     { H, H, R, H, H, H, R, H, R },
@@ -42,308 +62,600 @@ static ops_t op_lookup[TABLE_SIZE][TABLE_SIZE] = {
     { H, H, H, H, H, H, E, H, E }
 };
 
-// parser grammar rules
-typedef enum {
-    NO_MATCH,  // symbol sequence on stack doesn't match any rule
-
-    E_PLUS_E,  // E -> E + E
-    E_MINUS_E, // E -> E - E
-    E_MUL_E,   // E -> E* E
-    E_DIV_E,   // E -> E / E
-    E_INT_DIV_E, // E -> E // E
-
-    E_EQ_E,  // E -> E == E
-    E_NEQ_E, // E -> E ~= E
-    E_LEQ_E, // E -> E <= E
-    E_LNE_E, // E -> E < E
-    E_GEQ_E, // E -> E >= E
-    E_GNE_E, // E -> E > E
-
-    LEN_E, // E -> #E
-    E_CONCAT_E, // E -> E .. E
-
-    LP_E_RP, // E -> (E)
-
-    VAL_TO_E, // E -> i
-} rule_t;
+#define IDX_PLUS_MINUS 0
+#define IDX_MUL_DIT_IDIV 1
+#define IDX_REL 2
+#define IDX_LEN 3
+#define IDX_CONCAT 4
+#define IDX_L_PAREN 5
+#define IDX_R_PAREN 6
+#define IDX_I 7
+#define IDX_DOLLAR 8
 
 // returns symbol's index in the lookup table
-static int get_lookup_index(symbol_type_t type)
+static int get_lookup_index(sym_type_t type)
 {
     switch (type)
     {
-        case PLUS:
-        case MINUS:
-            return S_PLUS_MINUS;
+        case S_PLUS:
+        case S_MINUS:
+            return IDX_PLUS_MINUS;
 
-        case MULT:
-        case DIV:
-        case INT_DIV:
-            return S_MUL_DIV_INTDIV;
+        case S_MULT:
+        case S_DIV:
+        case S_INT_DIV:
+            return IDX_MUL_DIT_IDIV;
 
-        case LEQ:
-        case LNE:
-        case GEQ:
-        case GNE:
-        case EQ:
-        case NEQ:
-            return S_REL;
+        case S_LEQ:
+        case S_LNE:
+        case S_GEQ:
+        case S_GNE:
+        case S_EQ:
+        case S_NEQ:
+            return IDX_REL;
 
-        case L_PAREN:
-            return S_L_PAREN;
+        case S_L_PAREN:
+            return IDX_L_PAREN;
 
-        case R_PAREN:
-            return S_R_PAREN;
+        case S_R_PAREN:
+            return IDX_R_PAREN;
 
-        case LEN:
-            return S_LEN;
+        case S_LEN:
+            return IDX_LEN;
 
-        case CONCAT:
-            return S_CONCAT;
+        case S_CONCAT:
+            return IDX_CONCAT;
 
-        case ID:
-        case INT_LIT:
-        case NUM_LIT:
-        case STR_LIT:
-        case NIL:
-            return S_VAL;
+        case S_ID:
+        case S_INT_LIT:
+        case S_NUM_LIT:
+        case S_STR_LIT:
+        case S_NIL:
+            return IDX_I;
 
-        case DOLLAR:
-            return S_DOLLAR;
+        case S_DOLLAR:
+            return IDX_DOLLAR;
 
         default:
-            return S_DOLLAR;
+            return IDX_DOLLAR;
     }
 }
 
-static ops_t get_operation(symbol_type_t top_terminal, symbol_type_t current_sym)
+static enum ops lookup_operation(sym_type_t top_term, sym_type_t curr_sym)
 {
-    return op_lookup[get_lookup_index(top_terminal)][get_lookup_index(current_sym)];
+    int top_index = get_lookup_index(top_term);
+    int curr_index = get_lookup_index(curr_sym);
+    return op_lookup[top_index][curr_index];
+}
+
+static sym_tab_datatype to_sym_datatype(data_type_t dt)
+{
+    switch (dt) {
+        case T_INT:
+            return INTEGER;
+        case T_NUMBER:
+            return NUMBER;
+        case T_STRING:
+            return STRING;
+        case T_NIL:
+            return NIL;
+        default:
+            return NIL;
+    }
 }
 
 /**
- * Matches a sequence of symbols to a rule
+ * Checks type compatibility of two operands
+ *
+ * @param a first operand's tyoe
+ * @param b second operand's type
+ * @return true if types are compatible else false
+ */
+static bool check_type_compat(data_type_t a, data_type_t b)
+{
+    if (a == b)
+        return true;
+
+    if ((a == T_INT && b == T_NUMBER) || (a == T_NUMBER && b == T_INT))
+    {
+        generate_type_check_before_operation(to_sym_datatype(a), to_sym_datatype(b));
+        return true;
+    }
+
+    return false;
+}
+
+static int rule_equality(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    if (!check_type_compat(t1, t2))
+        if (!(t1 == T_NIL || t2 == T_NIL))
+            return INCOMPATIBILITY_ERR;
+
+    *res_type = T_BOOL;
+    return SYNTAX_OK;
+}
+
+static int rule_relational(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    ERR_IF_EITHER_NIL(t1, t2);
+
+    if (!check_type_compat(t1, t2))
+        return INCOMPATIBILITY_ERR;
+
+    *res_type = T_BOOL;
+    return SYNTAX_OK;
+}
+
+static int rule_plus_minus_mult(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    ERR_IF_EITHER_NIL(t1, t2);
+
+    if (!check_type_compat(t1, t2))
+        return INCOMPATIBILITY_ERR;
+
+    if (t1 == T_INT && t2 == T_INT)
+        *res_type = T_INT;
+    else
+        *res_type = T_NUMBER;
+
+    return SYNTAX_OK;
+}
+
+static int rule_divide(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    ERR_IF_EITHER_NIL(t1, t2);
+
+    if (!check_type_compat(t1, t2))
+            return INCOMPATIBILITY_ERR;
+
+    *res_type = T_NUMBER;
+    return SYNTAX_OK;
+}
+
+static int rule_int_divide(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    ERR_IF_EITHER_NIL(t1, t2);
+
+    if (t1 != T_INT && t2 != T_INT)
+        return INCOMPATIBILITY_ERR;
+
+    *res_type = T_INT;
+    return SYNTAX_OK;
+}
+
+static int rule_concat(data_type_t t1, data_type_t t2, data_type_t *res_type)
+{
+    ERR_IF_EITHER_NIL(t1, t2);
+
+    if (t1 == T_STRING && t2 == T_STRING)
+    {
+        *res_type = T_STRING;
+        return SYNTAX_OK;
+    }
+
+    return INCOMPATIBILITY_ERR;
+}
+
+/**
+ * Reduces binary operator expression
+ * @return error code
+ */
+static int apply_binary_rule(data_type_t t1, symbol_t operator,
+        data_type_t t2, data_type_t *res_type)
+{
+    if (t1 == T_UNKNOWN || t2 == T_UNKNOWN)
+        return UNDEFINED_ERR;
+
+    int res = SYNTAX_ERR;
+    switch (operator.type) {
+        case S_PLUS:
+            res = rule_plus_minus_mult(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_PLUS);
+            break;
+
+        case S_MINUS:
+            res = rule_plus_minus_mult(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_MINUS);
+            break;
+
+        case S_MULT:
+            res = rule_plus_minus_mult(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_MUL_SIGN);
+            break;
+
+        case S_DIV:
+            res = rule_divide(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_DIV_SIGN);
+            break;
+
+        case S_INT_DIV:
+            res = rule_int_divide(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_WN_DIV_SIGN);
+            break;
+
+        case S_CONCAT:
+            res = rule_concat(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_DOUBLE_DOT);
+            break;
+
+        case S_EQ:
+            res = rule_equality(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_COMPARING);
+            break;
+
+        case S_NEQ:
+            res = rule_equality(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_COMPARING2);
+            break;
+
+        case S_LEQ:
+            res = rule_relational(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_LESSEQ);
+            break;
+
+        case S_LNE:
+            res = rule_relational(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_LESS);
+            break;
+
+        case S_GEQ:
+            res = rule_relational(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_GREATEREQ);
+            break;
+
+        case S_GNE:
+            res = rule_relational(t1, t2, res_type);
+            generate_operation(TOKEN_TYPE_GREATER);
+            break;
+        default:
+            return SYNTAX_ERR;
+    }
+    return res;
+}
+
+static int rule_operand(data_type_t dtype, data_type_t *res_type)
+{
+    if (dtype == T_UNKNOWN)
+        return UNDEFINED_ERR;
+
+    *res_type = dtype;
+    return SYNTAX_OK;
+}
+
+static int rule_length(data_type_t dtype, data_type_t *res_type)
+{
+    if (dtype != T_STRING)
+        return UNDEFINED_ERR;
+
+    *res_type = T_INT;
+    return SYNTAX_OK;
+}
+
+/**
+ * Applies a rule to a sequence of symbols on the top of the stack
  *
  * @note The derivation is reversed so the symbols are expected in the reverse order
- * @param count number of symbols to match rule to
- * @param symbols linked list containing count symbols
- * @param rule destination to save rule to
  *
- * @return true symbols match some rule, otherwise false
+ * @param count number of symbols to apply rule to
+ * @param symbols linked list containing count symbols
+ *
+ * @return error code
  */
-static int match_rule(int count, symbol_t *symbols, rule_t *rule)
+static int apply_rule(int count, symbol_t *symbols, data_type_t *res_type)
 {
     symbol_t *s1 = symbols;
     symbol_t *s2 = symbols ? symbols->next : NULL;
     symbol_t *s3 = s2 ? s2->next : NULL;
 
-    switch (count)
+    if (count == 1) // operand
     {
-        case 1:
-            if (s1->type == ID || s1->type == STR_LIT
-                    || s1->type == INT_LIT || s1->type == NUM_LIT
-                    || s1->type == NIL)
-            {
-                return VAL_TO_E; // E -> i
-            }
-            return NO_MATCH;
+        bool is_lit = s1->type == S_STR_LIT || s1->type == S_INT_LIT 
+            || s1->type == S_NUM_LIT;
 
-        case 2:
-            if (s1->type == NON_TERMINAL && s2->type == LEN)
-                return LEN_E;
-
-            return NO_MATCH;
-
-        case 3:
-            if (s1->type == R_PAREN && s2->type == NON_TERMINAL && s3->type == L_PAREN)
-                return LP_E_RP;
-
-            if (s1->type == NON_TERMINAL && s3->type == NON_TERMINAL)
-                switch (s2->type)
-                {
-                    case PLUS:
-                        return E_PLUS_E;
-                    case MINUS:
-                        return E_MINUS_E;
-                    case MULT:
-                        return E_MUL_E;
-                    case DIV:
-                        return E_DIV_E;
-                    case INT_DIV:
-                        return E_INT_DIV_E;
-
-                    case CONCAT:
-                        return E_CONCAT_E;
-
-                    case EQ:
-                        return E_EQ_E;
-                    case NEQ:
-                        return E_NEQ_E;
-
-                    case LEQ:
-                        return E_LEQ_E;
-                    case LNE:
-                        return E_LNE_E;
-                    case GEQ:
-                        return E_GEQ_E;
-                    case GNE:
-                        return E_GNE_E;
-
-                    default:
-                        return NO_MATCH;
-                }
-
-        default:
-            return NO_MATCH;
+        if (is_lit || s1->type == S_ID || s1->type == S_NIL)
+            return rule_operand(s1->data_type, res_type);
     }
+    else if (count == 2) // unary operation
+    {
+        if (s1->type == S_NON_TERMINAL && s2->type == S_LEN)
+        {
+            generate_operation(TOKEN_TYPE_LENGTH);
+            return rule_length(s1->data_type, res_type);
+        }
+    }
+    else if (count == 3) // binary operation
+    {
+        // paren rule
+        if (s1->type == S_R_PAREN
+                && s2->type == S_NON_TERMINAL
+                &&s3->type == S_L_PAREN)
+        {
+            if (s2->data_type == T_UNKNOWN)
+                return INCOMPATIBILITY_ERR;
 
+            *res_type = s2->data_type;
+            return SYNTAX_OK;
+        }
+
+        if (s1->type == S_NON_TERMINAL && s3->type == S_NON_TERMINAL)
+            return apply_binary_rule(s3->data_type, *s2, s1->data_type, res_type);
+    }
+    return SYNTAX_ERR;
 }
 
 /**
- * Converts token to symbol
+ * Converts token to symbol type
  */
-symbol_type_t token_to_symbol(token_t token)
+static sym_type_t token_to_sym_type(token_t token)
 {
     switch (token.type)
     {
         case TOKEN_TYPE_PLUS:
-            return PLUS;
+            return S_PLUS;
         case TOKEN_TYPE_MINUS:
-            return MINUS;
+            return S_MINUS;
         case TOKEN_TYPE_MUL_SIGN:
-            return MULT;
+            return S_MULT;
         case TOKEN_TYPE_DIV_SIGN:
-            return DIV;
+            return S_DIV;
         case TOKEN_TYPE_WN_DIV_SIGN:
-            return INT_DIV;
+            return S_INT_DIV;
 
         case TOKEN_TYPE_LENGTH:
-            return LEN;
+            return S_LEN;
         case TOKEN_TYPE_DOUBLE_DOT:
-            return CONCAT;
+            return S_CONCAT;
 
         case TOKEN_TYPE_COMPARING:
-            return EQ;
+            return S_EQ;
         case TOKEN_TYPE_COMPARING2:
-            return NEQ;
+            return S_NEQ;
         case TOKEN_TYPE_LESSEQ:
-            return LEQ;
+            return S_LEQ;
         case TOKEN_TYPE_LESS:
-            return LNE;
+            return S_LNE;
         case TOKEN_TYPE_GREATEREQ:
-            return GEQ;
+            return S_GEQ;
         case TOKEN_TYPE_GREATER:
-            return GNE;
+            return S_GNE;
 
         case TOKEN_TYPE_LEFTB:
-            return L_PAREN;
+            return S_L_PAREN;
         case TOKEN_TYPE_RIGHTB:
-            return R_PAREN;
+            return S_R_PAREN;
 
         case TOKEN_TYPE_ID:
-            return ID;
+            return S_ID;
 
         case TOKEN_TYPE_INT:
-            return INT_LIT;
+            return S_INT_LIT;
         case TOKEN_TYPE_STR:
-            return STR_LIT;
+            return S_STR_LIT;
         case TOKEN_TYPE_DOUBLE:
-            return NUM_LIT;
+        case TOKEN_TYPE_EXP:
+        case TOKEN_TYPE_SIGN_EXP:
+            return S_NUM_LIT;
         case TOKEN_TYPE_KW:
             if (token.attribute.keyword == KW_NIL)
-                return NIL;
-            return DOLLAR;
+                return S_NIL;
+            return S_DOLLAR;
 
         default:
-            return DOLLAR;
+            return S_DOLLAR;
     }
 }
 
-static int reduce(symbol_stack_t *stack)
+/**
+ * Returns data type of the token
+ */
+static data_type_t get_token_data_type(token_t token)
 {
-    int count = 0;
-    symbol_t *to_reduce = symbol_stack_top_to_handle(stack, &count);
-
-    if (count < 1 || count > 3)
-        return SYNTAX_ERR;
-
-    rule_t rule;
-    if (match_rule(count, to_reduce, &rule) == NO_MATCH)
+    if (token.type == TOKEN_TYPE_ID)
     {
-        return SYNTAX_ERR;
+        // adapt symtable api to our api
+        sym_tab_key_t key = token.attribute.string->s;
+        sym_tab_item_t *item = scope_search(&ststack, key);
+        if (!item || !item->data.return_data_types)
+            return T_UNKNOWN; // the variable is not defined
+
+        // convert symtable data type to our
+        sym_tab_datatype st_type = item->data.return_data_types->datatype;
+        switch (st_type) {
+            case INTEGER:
+                return T_INT;
+            case NUMBER:
+                return T_NUMBER;
+            case STRING:
+                return T_STRING;
+            case NIL:
+                return T_NIL;
+        }
     }
 
-    // pop all reduced symbols + handle
-    for (int i = 0; i < count + 1; i++)
-        symbol_stack_pop(stack);
-
-    symbol_stack_push(stack, NON_TERMINAL);
-    return SYNTAX_OK;
+    switch (token.type) {
+        case TOKEN_TYPE_INT:
+            return T_INT;
+        case TOKEN_TYPE_DOUBLE:
+        case TOKEN_TYPE_EXP:
+        case TOKEN_TYPE_SIGN_EXP:
+            return T_NUMBER;
+        case TOKEN_TYPE_STR:
+            return T_STRING;
+        case TOKEN_TYPE_KW:
+            if (token.attribute.keyword == KW_NIL)
+                return T_NIL;
+            break;
+        default:
+            return T_UNKNOWN;
+    }
+    return T_UNKNOWN;
 }
 
-int analyze(token_t *token, symbol_stack_t *stack)
+/**
+ * Implementation of precedence analysis shift operation
+ * Shifts symbol from input onto top of stack
+ *
+ * @return error code
+ */
+static int shift(sym_stack_t *stack, token_t *token,
+        sym_type_t sym, data_type_t dtype)
 {
-    if (!symbol_stack_push(stack, DOLLAR))
+    if (!sym_stack_push(stack, sym, dtype))
         return INTERNAL_ERR;
 
-    symbol_t *top_terminal;
-    symbol_type_t current_sym;
+    if (get_next_token(token) == LEX_ERR)
+        return LEX_ERR;
 
-    top_terminal = symbol_stack_top_terminal(stack);
-    current_sym = token_to_symbol(*token);
-
-    while (!(current_sym == DOLLAR && top_terminal->type == DOLLAR))
-    {
-        switch (get_operation(top_terminal->type, current_sym))
-        {
-            case S: // shift
-                if (!symbol_stack_push(stack, current_sym))
-                    return INTERNAL_ERR;
-                else
-                    if(get_next_token(token) == LEX_ERR)
-                        return LEX_ERR;
-                break;
-
-            case H: // shift with handle
-                if (!symbol_stack_insert_handle(stack))
-                    return INTERNAL_ERR;
-
-                if (!symbol_stack_push(stack, current_sym))
-                    return INTERNAL_ERR;
-
-                if(get_next_token(token) == LEX_ERR)
-                    return LEX_ERR;
-
-                break;
-
-            case R: // reduce
-                {
-                    int result = reduce(stack);
-                    if (result != SYNTAX_OK)
-                        return result;
-                    break;
-                }
-            case E: // error
-                return SYNTAX_ERR;
-        }
-        top_terminal = symbol_stack_top_terminal(stack);
-        current_sym = token_to_symbol(*token);
-    }
     return SYNTAX_OK;
 }
 
 /**
- * Runs the expression parser
+ * Implementation of precedence analysis shift with handle operation
+ * Inserts "handle" after top terminal on the stack and
+ * shifts symbol from input onto top of stack
  *
  * @return error code
  */
-int parse_expr(token_t *token)
+static int shift_w_handle(sym_stack_t *stack, token_t *token,
+        sym_type_t sym, data_type_t dtype)
 {
-    symbol_stack_t stack;
-    symbol_stack_init(&stack);
+    if (!sym_stack_insert_handle(stack))
+        return INTERNAL_ERR;
 
-    int result = analyze(token, &stack);
+    if (sym == S_INT_LIT || sym == S_STR_LIT || sym == S_NUM_LIT || sym == S_ID || sym == S_NIL)
+    {
+        generate_push(token);
+    }
 
-    symbol_stack_free(&stack);
+    shift(stack, token, sym, dtype);
+
+    return SYNTAX_OK;
+}
+
+/**
+ * Implementation of precedence analysis reduce operation
+ * Reduces the part of expression from the top of the symbol stack
+ * to the special symbol "handle" by trying to apply one of set rules
+ *
+ * @param stack the symbol stack
+ * @return error code
+ */
+static int reduce(sym_stack_t *stack)
+{
+    int count = 0;
+    symbol_t *to_reduce = sym_stack_top_to_handle(stack, &count);
+
+    data_type_t data_type = T_UNKNOWN;
+    int res = apply_rule(count, to_reduce, &data_type);
+    if (res != SYNTAX_OK)
+        return res;
+
+    // pop all reduced symbols + handle
+    for (int i = 0; i < count + 1; i++)
+        sym_stack_pop(stack);
+
+    sym_stack_push(stack, S_NON_TERMINAL, data_type);
+    return SYNTAX_OK;
+}
+
+/**
+ * Looks ahead one token and determines if current token (invalid)
+ * isn't part of next expression, then returns the token back to the scanner
+ *
+ * For example:
+ * local a : integer = 5 + 13
+ * a = a + 42
+ *
+ * @return error code
+ */
+static int check_end_of_expr()
+{
+    token_t *next = malloc(sizeof(token_t));
+    token_init(next);
+
+    if (get_next_token(next) == LEX_ERR)
+        return LEX_ERR;
+
+    if (next->type == TOKEN_TYPE_COLON
+            || next->type == TOKEN_TYPE_EQUAL
+            || next->type == TOKEN_TYPE_LEFTB)
+    {
+        return_token(next);
+        return SYNTAX_OK;
+    }
+    token_free(next);
+    free(next);
+    return SYNTAX_ERR;
+}
+
+/**
+ * Parses expression starting at token
+ * If an error occurs the parser determines if it's an actual error
+ * and not one caused by false end of expression detection
+ * by peeking at the next token
+ *
+ * @param token the first token of the expression
+ * @param stack symbol stack used by precedence analysis
+ * @return error code
+ */
+static int analyze(token_t *token, sym_stack_t *stack, data_type_t *res_type)
+{
+    if (!sym_stack_push(stack, S_DOLLAR, T_UNKNOWN))
+        return INTERNAL_ERR;
+
+    symbol_t *top_term = sym_stack_top_terminal(stack);
+    sym_type_t curr_sym = token_to_sym_type(*token);
+
+    bool detected_end = false;
+    while (!(curr_sym == S_DOLLAR && top_term->type == S_DOLLAR))
+    {
+        int result = SYNTAX_ERR;
+        data_type_t data_type = get_token_data_type(*token);
+        switch (lookup_operation(top_term->type, curr_sym))
+        {
+            case S: // shift
+                result = shift(stack, token, curr_sym, data_type);
+                if (result != SYNTAX_OK)
+                    return result;
+                break;
+
+            case H: // shift with handle
+                result = shift_w_handle(stack, token, curr_sym, data_type);
+                if (result != SYNTAX_OK)
+                    return result;
+                break;
+
+            case R: // reduce
+                result = reduce(stack);
+                if (result != SYNTAX_OK)
+                    return result;
+                break;
+
+            case E: // error
+                result = check_end_of_expr();
+                if (result != SYNTAX_OK)
+                    return result;
+
+                detected_end = true; // we found end, force DOLLAR symbol
+                break;
+        }
+        top_term = sym_stack_top_terminal(stack);
+        curr_sym = detected_end ? S_DOLLAR : token_to_sym_type(*token);
+    }
+
+    *res_type = sym_stack_top(stack)->data_type;
+    return SYNTAX_OK;
+}
+
+int parse_expr(token_t *token, ST_stack *st_stack, data_type_t *res_type)
+{
+    ststack = st_stack;
+
+    sym_stack_t stack;
+    sym_stack_init(&stack);
+
+    int result = analyze(token, &stack, res_type);
+
+    sym_stack_free(&stack);
     return result;
 }

@@ -255,7 +255,7 @@ void generate_number_of_params(int params_amount)
 	add_code("PUSHS int@"); add_code_int(params_amount); add_code("\n");
 }
 
-void generate_param_before_call(int index, token_t* param)
+void generate_param_before_call(int index)
 {
 	add_code("DEFVAR TF@%"); add_code_int(index); add_code("\n");
 	add_code("POPS TF@%"); add_code_int(index); add_code("\n");

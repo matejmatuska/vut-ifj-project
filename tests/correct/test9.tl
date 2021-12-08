@@ -7,5 +7,5 @@ function main(a : integer) : integer, string
 
     a = a + 5
 
-    return hi, bye
+    return hi, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 end

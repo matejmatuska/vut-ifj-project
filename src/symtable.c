@@ -1,5 +1,6 @@
 #include "symtable.h"
 #include "ST_stack.h"
+#include "dynamic_string.h"
 #include "error.h"
 
 /**
@@ -108,13 +109,14 @@ name_and_data create_name_data(sym_tab_datatype data, dynamic_string_t *name)
 * @param sym_tab_datatype data -> value we want to add
   * @return linked list of data types
 */
-name_and_data add_name_data(name_and_data first, sym_tab_datatype data)
+name_and_data add_name_data(name_and_data first, sym_tab_datatype data, dynamic_string_t * name)
 {
 	name_and_data new, p;
 	new = (name_and_data)malloc(sizeof(struct name_and_datatype));
 	new->next = NULL;
 	new->datatype = data;
-	new->string = first->string;
+	new->string = name;
+
 
 	if (first == NULL)
 	{
@@ -144,6 +146,8 @@ void delete_data_name(name_and_data *first)
 	while (current != NULL)
 	{
 		next = current->next;
+        if (current->string)
+            dyn_str_free(current->string);
 		free(current);
 		current = next;
 	}
@@ -466,4 +470,26 @@ sym_tab_t *sym_tab_move(sym_tab_t *from)
 size_t sym_tab_size(const sym_tab_t *t)
 {
 	return t->size;
+}
+/**
+  * Check if all items in table are defined
+  * @param  sym_tab_t *t - specific symbol table
+  * @return true if all items are defined
+*/
+bool is_defined(sym_tab_t *t)
+{
+	bool defined = true;
+	sym_tab_item_t *item;
+	for (unsigned i = 0; i < t->arr_size; i++)
+	{
+		item = t->element[i];
+		while (item != NULL)
+		{
+			if(item->data.item_type == HT_FUNC && item->data.defined == false)
+				defined = false;
+                item = item->next;
+        }
+
+	}
+	return defined;
 }
