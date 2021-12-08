@@ -61,6 +61,9 @@ void generate_type_check_before_asign(sym_tab_datatype from_type, sym_tab_dataty
 void generate_type_check_before_operation(sym_tab_datatype type1, sym_tab_datatype type2);
 //
 
+//
+void generate_type_check_before_while_if();
+
 //if generation
 void generate_start_of_if(int if_index);
 void generate_start_of_else(int else_index, int if_index);
@@ -92,5 +95,6 @@ void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_ty
 void generate_nil_check();
 void generate_conversion_function_bf_op1();
 void generate_conversion_function_bf_op2();
+void generate_while_if_type_check();
 //
 #endif 
