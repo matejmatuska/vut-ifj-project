@@ -23,7 +23,11 @@ test: $(BIN)
 
 .PHONY: zip
 zip:
-	zip $(ARCHIVE) *.c *.h Makefile rozdeleni ../docs/dokumentace.pdf
+	cp ../rozdeleni .
+	cp ../docs/dokumentace.pdf .
+	zip $(ARCHIVE) *.c *.h Makefile rozdeleni dokumentace.pdf
+	rm rozdeleni
+	rm dokumentace.pdf
 
 .PHONY: pack
 pack: zip
