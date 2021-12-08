@@ -670,6 +670,8 @@ bool st_local() {
         if (TOK_IS_ID) {
 
             if (isfunc(scope, ID_NAME())) {
+                item_to_add = sym_tab_add_item(top_table(scope), name->s);
+                sym_tab_add_data_var(item_to_add, par_typ, true, true);
                 if (!st_fnc_id(&par_type, &num)) {
                     delete_data_name(&par_type);
                     delete_data_types(&par_typ);
@@ -686,6 +688,8 @@ bool st_local() {
                     delete_data_types(&par_typ);
                     return false;
                 }
+                item_to_add = sym_tab_add_item(top_table(scope), name->s);
+                sym_tab_add_data_var(item_to_add, par_typ, true, true);
             } else {
                 ERROR = UNDEFINED_ERR;
                 delete_data_name(&par_type);
@@ -704,14 +708,15 @@ bool st_local() {
                 ERROR = SEMANTIC_ERR;
                 return false;
             }
+            item_to_add = sym_tab_add_item(top_table(scope), name->s);
+            sym_tab_add_data_var(item_to_add, par_typ, true, true);
         } else {
             delete_data_name(&par_type);
             delete_data_types(&par_typ);
             ERROR = SYNTAX_ERR;
             return false;
         }
-        item_to_add = sym_tab_add_item(top_table(scope), name->s);
-        sym_tab_add_data_var(item_to_add, par_typ, true, true);
+
     } else {
         item_to_add = sym_tab_add_item(top_table(scope), name->s);
         sym_tab_add_data_var(item_to_add, par_typ, true, false);
@@ -1239,7 +1244,6 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                 size_t level = 0;
                 scope_search(scope, tmp_name->string->s, &uid, &level);
                 index++;
-                generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
 
                 generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
                                                    tmp_name->datatype);
@@ -1588,17 +1592,8 @@ bool expr(name_and_data *types, int *num) {
         if (typ == sym_data_to_data_type((ptr)->datatype) || (typ == T_INT && (ptr)->datatype == NUMBER) || typ == T_NIL) {
             size_t uid = st_stack_uid(scope);
             size_t level = st_stack_level(scope);
-/*            if(scope_search(scope, (ptr)->string->s,&uid, &level) == NULL){
-                ERROR = UNDEFINED_ERR;
-                return false;
-            }*/
-            if (st_stack_level(scope) >= level)
-                generate_pop((ptr)->string->s, level, uid);
-            else if (st_stack_level(scope) < level){
-                ERROR = UNDEFINED_ERR;
-                return false;
-            }
-            else
+            scope_search(scope, ptr->string->s, &uid, &level);
+
                 generate_pop((ptr)->string->s, level, uid);
 
             ptr = (ptr)->next;
