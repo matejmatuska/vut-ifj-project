@@ -23,7 +23,8 @@ sym_tab_t *top_table(ST_stack *stack)
 bool push(struct ST_stack *stack)
 {
     st_stack_item_t *new = malloc(sizeof(st_stack_item_t));
-    sym_tab_t *table = sym_tab_init();
+    sym_tab_t *table = sym_tab_init(stack->uid++, stack->level); // increase the uid to keep it u(nique)
+
     // check if stack was allocated correctly
     if (!new)
     {
@@ -64,7 +65,7 @@ bool pop(ST_stack *stack)
   * @param  sym_tab_key_t key - key we want to find
   * @return found item or NULL if item doesn't exist
 */
-sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key)
+sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key, size_t *uid, size_t *level)
 {
     st_stack_item_t *top = stack->top;
     // if symbol table is empty
@@ -79,7 +80,12 @@ sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key)
         {
             sym_tab_item_t *tmp = NULL;
             if ((tmp = sym_tab_find_in_table(temp->localtable, key)))
+            {
+                // found the id
+                *uid = temp->localtable->uid;
+                *level = temp->localtable->nest_level;
                 return tmp;
+            }
             temp = temp->next;
         }
         return NULL;
@@ -94,6 +100,7 @@ void init_ST_stack(ST_stack *stack)
 {
     stack->top = NULL;
     stack->level = 0;
+    stack->uid = 0;
 }
 
 /**
@@ -104,6 +111,7 @@ void init_ST_stack(ST_stack *stack)
 bool free_ST_stack(ST_stack *stack)
 {
     stack->level = 0;
+    stack->uid = 0;
     st_stack_item_t *top = stack->top;
     // check for empty symbol table
     if (top == NULL)
@@ -133,11 +141,12 @@ bool free_ST_stack(ST_stack *stack)
 */
 bool isfunc(ST_stack *stack, sym_tab_key_t key)
 {
-    if (scope_search(stack, key) == NULL)
+    sym_tab_item_t *item = scope_search(stack, key);
+    if (item == NULL)
         return false;
     else
     {
-        if (scope_search(stack, key)->data.item_type == HT_FUNC)
+        if (item->data.item_type == HT_FUNC)
             return true;
         else
             return false;
@@ -151,12 +160,12 @@ bool isfunc(ST_stack *stack, sym_tab_key_t key)
 */
 bool isvar(ST_stack *stack, sym_tab_key_t key)
 {
-
-    if (scope_search(stack, key) == NULL)
+    sym_tab_item_t *item = scope_search(stack, key);
+    if (item == NULL)
         return false;
     else
     {
-        if (scope_search(stack, key)->data.item_type == HT_VAR)
+        if (item->data.item_type == HT_VAR)
             return true;
         else
             return false;

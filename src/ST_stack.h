@@ -10,7 +10,8 @@
 // structure of stack of symbol tables
 typedef struct ST_stack
 {
-    size_t level;
+    size_t level; // current nesting level beggining at 0
+    size_t uid; // unique identifier for symtable
     struct st_stack_item *top;
 } ST_stack;
 
@@ -23,7 +24,7 @@ typedef struct st_stack_item
 // functions
 void init_ST_stack(ST_stack *stack);                                    // initialize stack of symbol tables
 
-// returns number of items on stack (current nesting level)
+// returns number of items on stack (current nesting level) starting from 0
 size_t st_stack_level(ST_stack *stack);
 
 sym_tab_t *top_table(ST_stack *stack);                             // current table of symbols
@@ -32,7 +33,7 @@ bool push(ST_stack *stack);                                // push another table
 
 bool pop(ST_stack *stack);                                        // pop table of symbols
 
-sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key); // search for key in every table of symbols
+sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key, size_t *uid, size_t *level);
 
 bool free_ST_stack(ST_stack *stack);                              // freee stack of symbol tables
 

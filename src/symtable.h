@@ -86,6 +86,8 @@ typedef struct sym_tab_item_t
 // structure of table
 struct sym_tab
 {
+    size_t uid; // unique identifier
+    size_t nest_level;
     size_t size;
     size_t arr_size;
     struct sym_tab_item_t *element[];
@@ -95,7 +97,7 @@ struct sym_tab
 size_t sym_tab_hash_function(sym_tab_key_t str);
 
 // functions within sym_table:
-sym_tab_t *sym_tab_init();                                              // constuctor of hasthable
+sym_tab_t *sym_tab_init(size_t uid, size_t nest_level);                                              // constuctor of hasthable
 sym_tab_t *sym_tab_move(sym_tab_t *from);                               // move data to new hassym_table
 size_t sym_tab_size(const sym_tab_t *t);                                // number of items in hassym_table
 sym_tab_item_t *sym_tab_find_in_table(sym_tab_t *t, sym_tab_key_t key); // find item in hassym_table
