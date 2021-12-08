@@ -140,8 +140,8 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 
 void generate_func_param_assign(char* param_id, size_t level, size_t UID,int param_index)
 {
-	add_code("DEFVAR LF@"); add_code(param_id); add_code("\n");
-	add_code("MOVE LF@"); add_id(param_id, level, UID); 
+	add_code("DEFVAR LF@"); add_id(param_id, level, UID); add_code("\n");
+	add_code("MOVE LF@"); add_id(param_id, level, UID);
 	add_code(" LF@%"); add_code_int(param_index); add_code("\n");
 }
 

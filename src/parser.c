@@ -323,6 +323,7 @@ bool fnc_def() {
         ERROR = SYNTAX_ERR;
         return false;
     }
+
     //create_data_type(ret_type);
     if (!ret_type_list(&ret_type, &ret_num)) {
         return false;
@@ -353,6 +354,7 @@ bool fnc_def() {
     if (!st_list()) {
         return false;
     }
+
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         return false;
@@ -1146,8 +1148,6 @@ bool fnc_id() {
 
 
             if (TOK_IS_ID) {
-                size_t uid;
-                size_t level;
                 sym_tab_item_t *id = scope_search(scope, ID_NAME(),&uid, &level);
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
