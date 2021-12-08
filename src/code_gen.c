@@ -368,14 +368,16 @@ void generate_function_chr()
 	//generate_declare_variable("tmp");
 	add_code("DEFVAR LF@tmp\n");
 	add_code("MOVE LF@tmp nil@nil\n");
+
+	add_code("TYPE LF@tmp LF@i\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
 	add_code("LT LF@tmp LF@i int@0\n");
-	add_code("JUMPIFEQ !return_label1 LF@tmp bool@true\n");
+	add_code("JUMPIFEQ !nil_return LF@tmp bool@true\n");
 	add_code("GT LF@tmp LF@i int@255\n");
-	add_code("JUMPIFEQ !return_label1 LF@tmp bool@true\n");
+	add_code("JUMPIFEQ !nil_return LF@tmp bool@true\n");
 
 	add_code("INT2CHAR "); add_code("LF@retval"); add_code_index(1); add_code(" LF@i\n");
-
-	add_code("LABEL !return_label1\n");
+	add_code("LABEL !nil_return\n");
 	generate_end_of_the_func("chr");
 }
 
@@ -396,16 +398,23 @@ void generate_function_ord()
 	add_code("DEFVAR LF@tmp\n");
 	add_code("MOVE LF@tmp nil@nil\n");
 
+	add_code("TYPE LF@tmp LF@s\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
+	add_code("TYPE LF@tmp LF@i\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
+
 	add_code("STRLEN LF@length LF@s\n");
 	add_code("GT LF@tmp LF@i LF@length\n");
-	add_code("JUMPIFEQ !return_label2 LF@tmp bool@true\n");
+	add_code("JUMPIFEQ !nil_return2 LF@tmp bool@true\n");
+	add_code("LT LF@tmp LF@i int@1\n");
+	add_code("JUMPIFEQ !nil_return2 LF@tmp bool@true\n");
 
 	add_code("SUB LF@i LF@i int@1\n");
 
 	add_code("STRI2INT "); add_code("LF@retval");
     add_code_index(1); add_code(" LF@s LF@i\n");
 
-	add_code("LABEL !return_label2\n");
+	add_code("LABEL !nil_return2\n");
 	generate_end_of_the_func("ord");
 }
 
@@ -433,11 +442,24 @@ void generate_function_substr()
 	add_code("DEFVAR LF@sign\n");
 	add_code("MOVE LF@sign nil@nil\n");
 	
+	add_code("TYPE LF@tmp LF@s\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
+	add_code("TYPE LF@tmp LF@i\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
+	add_code("TYPE LF@tmp LF@j\n");
+	add_code("JUMPIFEQ !error_label LF@tmp string@nil\n");
+
 	add_code("STRLEN LF@length LF@s\n");
 	add_code("GT LF@tmp LF@i LF@length\n");
 	add_code("JUMPIFEQ !return_label3 LF@tmp bool@true\n");
+	add_code("LT LF@tmp LF@i int@1\n");
+	add_code("JUMPIFEQ !return_label3 LF@tmp bool@true\n");
+
 	add_code("GT LF@tmp LF@j LF@length\n");
 	add_code("JUMPIFEQ !return_label3 LF@tmp bool@true\n");
+	add_code("LT LF@tmp LF@j int@1\n");
+	add_code("JUMPIFEQ !return_label3 LF@tmp bool@true\n");
+
 	add_code("GT LF@tmp LF@i LF@j\n");
 	add_code("JUMPIFEQ !return_label3 LF@tmp bool@true\n");
 	
@@ -465,8 +487,13 @@ void generate_function_tointeger()
 	//generate_func_param_assign("f", 1);
 	add_code("DEFVAR LF@f\n");
 	add_code("MOVE LF@f LF@%1\n");
+
+	add_code("TYPE GF@tmp?1 LF@f\n");
+	add_code("JUMPIFEQ !return_label4 GF@tmp?1 string@nil\n");
+
 	add_code("FLOAT2INT "); add_code("LF@retval");
     add_code_index(1); add_code(" LF@f\n");
+	add_code("LABEL !return_label4\n");
 	generate_end_of_the_func("tointeger");
 }
 
@@ -621,14 +648,14 @@ void generate_end_of_if(int if_index)
 
 void generate_nil_check()
 {
-	add_code("POPS GF@tmp1\n");
-	add_code("TYPE GF@tmp3 GF@tmp1\n");
-	add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
-	add_code("POPS GF@tmp2\n");
-	add_code("TYPE GF@tmp3 GF@tmp2\n");
-	add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
-	add_code("PUSHS GF@tmp2\n");
-	add_code("PUSHS GF@tmp1\n");
+	add_code("POPS GF@tmp?1\n");
+	add_code("TYPE GF@tmp?3 GF@tmp?1\n");
+	add_code("JUMPIFEQ !error_label GF@tmp?3 string@nil\n");
+	add_code("POPS GF@tmp?2\n");
+	add_code("TYPE GF@tmp?3 GF@tmp?2\n");
+	add_code("JUMPIFEQ !error_label GF@tmp?3 string@nil\n");
+	add_code("PUSHS GF@tmp?2\n");
+	add_code("PUSHS GF@tmp?1\n");
 }
 
 void generate_operation(token_type operation)
@@ -653,24 +680,24 @@ void generate_operation(token_type operation)
 	case TOKEN_TYPE_DIV_SIGN:
 		generate_nil_check();
 
-		add_code("POPS GF@tmp1\n");
-		add_code("JUMPIFNEQ !next_label GF@tmp1 float@0x0p+0\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("JUMPIFNEQ !next_label GF@tmp?1 float@0x0p+0\n");
 		add_code("CLEARS \n");
 		add_code("EXIT int@9\n");
 		add_code("LABEL !next_label\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("DIVS\n");
 		break;
 	case TOKEN_TYPE_WN_DIV_SIGN:
 		generate_nil_check();
 
-		add_code("POPS GF@tmp1\n");
-		add_code("JUMPIFNEQ !next_label GF@tmp1 int@0\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("JUMPIFNEQ !next_label GF@tmp?1 int@0\n");
 		add_code("CLEARS \n");
 		add_code("EXIT int@9\n");
 		add_code("LABEL !next_label\n");
 		add_code("INT2FLOATS\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("INT2FLOATS\n");
 		add_code("DIVS\n");
 		add_code("FLOAT2INTS\n");
@@ -687,13 +714,13 @@ void generate_operation(token_type operation)
 	case TOKEN_TYPE_LESSEQ:
 		generate_nil_check();
 
-		add_code("POPS GF@tmp1\n");
-		add_code("POPS GF@tmp2\n");
-		add_code("PUSHS GF@tmp2\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("POPS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("EQS\n");
-		add_code("PUSHS GF@tmp2\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("PUSHS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("LTS\n");
 		add_code("ORS\n");
 		break;
@@ -705,13 +732,13 @@ void generate_operation(token_type operation)
 	case TOKEN_TYPE_GREATEREQ:
 		generate_nil_check();
 
-		add_code("POPS GF@tmp1\n");
-		add_code("POPS GF@tmp2\n");
-		add_code("PUSHS GF@tmp2\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("POPS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("EQS\n");
-		add_code("PUSHS GF@tmp2\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("PUSHS GF@tmp?2\n");
+		add_code("PUSHS GF@tmp?1\n");
 		add_code("GTS\n");
 		add_code("ORS\n");
 		break;
@@ -723,22 +750,22 @@ void generate_operation(token_type operation)
 		break;
 	case TOKEN_TYPE_LENGTH:
 		
-		add_code("POPS GF@tmp1\n");
-		add_code("TYPE GF@tmp3 GF@tmp1\n");
-		add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("TYPE GF@tmp?3 GF@tmp?1\n");
+		add_code("JUMPIFEQ !error_label GF@tmp?3 string@nil\n");
+		add_code("PUSHS GF@tmp?1\n");
 		
-		add_code("POPS GF@tmp1\n");
-		add_code("STRLEN GF@tmp1 GF@tmp1\n");
-		add_code("PUSHS  GF@tmp1\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("STRLEN GF@tmp?1 GF@tmp?1\n");
+		add_code("PUSHS  GF@tmp?1\n");
 		break;
 	case TOKEN_TYPE_DOUBLE_DOT:
 		generate_nil_check();
 
-		add_code("POPS GF@tmp1\n");
-		add_code("POPS GF@tmp2\n");
-		add_code("CONCAT GF@tmp1 GF@tmp2 GF@tmp1\n");
-		add_code("PUSHS GF@tmp1\n");
+		add_code("POPS GF@tmp?1\n");
+		add_code("POPS GF@tmp?2\n");
+		add_code("CONCAT GF@tmp?1 GF@tmp?2 GF@tmp?1\n");
+		add_code("PUSHS GF@tmp?1\n");
 		break;
 	default:
 		break;
