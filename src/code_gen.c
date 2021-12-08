@@ -49,7 +49,7 @@ void add_code_float(double integer)
 void add_code_index(int integer)
 {
 	char tmp[40];
-	sprintf(tmp, "-%d", integer);
+	sprintf(tmp, "?%d", integer);
 	dyn_str_add_string(&code, tmp);
 }
 
@@ -96,11 +96,11 @@ void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_ty
 {
 	if (from_type == INTEGER && to_type == NUMBER)
 	{
-		add_code("INT2FLOAT TF@retval"); add_code_int(index); add_code(" TF%retval"); add_code_int(index); add_code("\n");
+		add_code("INT2FLOAT TF@retval"); add_code_index(index); add_code(" TF%retval"); add_code_index(index); add_code("\n");
 	}
 	else if (from_type == NUMBER && to_type == INTEGER)
 	{
-		add_code("FLOAT2INT TF@retval"); add_code_int(index); add_code(" TF%retval"); add_code_int(index); add_code("\n");
+		add_code("FLOAT2INT TF@retval"); add_code_index(index); add_code(" TF%retval"); add_code_index(index); add_code("\n");
 	}
 }
 
@@ -122,7 +122,7 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 {
 	
 	generate_type_check_before_asign_retval(index, from_type, to_type);
-	add_code("MOVE LF@"); add_code(var_id); add_code(" TF@retval"); add_code_int(index); add_code("\n");
+	add_code("MOVE LF@"); add_code(var_id); add_code(" TF@retval"); add_code_index(index); add_code("\n");
 }
 
 void generate_func_param_assign(char* param_id, int param_index)
@@ -154,8 +154,8 @@ void generate_default_variable_value(sym_tab_datatype type)
 
 void generate_retval(int index, sym_tab_datatype type)
 {
-	add_code("DEFVAR LF@retval"); add_code_int(index); add_code("\n");
-	add_code("MOVE LF@retval"); add_code_int(index); add_code(" ");
+	add_code("DEFVAR LF@retval"); add_code_index(index); add_code("\n");
+	add_code("MOVE LF@retval"); add_code_index(index); add_code(" ");
 
 	generate_default_variable_value(type);
 	add_code("\n");
@@ -164,12 +164,12 @@ void generate_retval(int index, sym_tab_datatype type)
 
 void generate_assign_retval(int index)
 {
-	add_code("POPS LF@retval"); add_code_int(index); add_code("\n");
+	add_code("POPS LF@retval"); add_code_index(index); add_code("\n");
 }
 
 void generate_retval_nil_asign(int index)
 {
-	add_code("MOVE LF@retval"); add_code_int(index); add_code(" nil@nil\n");
+	add_code("MOVE LF@retval"); add_code_index(index); add_code(" nil@nil\n");
 }
 
 dynamic_string_t* convert_string(char* string)
@@ -354,7 +354,9 @@ void generate_function_chr()
 	add_code("JUMPIFEQ return_label1 LF@tmp bool@true\n");
 	add_code("GT LF@tmp LF@i int@255\n");
 	add_code("JUMPIFEQ return_label1 LF@tmp bool@true\n");
-	add_code("INT2CHAR LF@retval1 LF@i\n");
+
+	add_code("INT2CHAR "); add_code("LF@retval");
+    add_code_index(1); add_code(" LF@i\n");
 
 	add_code("LABEL return_label1\n");
 	generate_end_of_the_func("chr");
@@ -374,7 +376,9 @@ void generate_function_ord()
 	add_code("JUMPIFEQ return_label2 LF@tmp bool@true\n");
 
 	add_code("SUB LF@i LF@i int@1\n");
-	add_code("STRI2INT LF@retval1 LF@s LF@i\n");
+
+	add_code("STRI2INT "); add_code("LF@retval");
+    add_code_index(1); add_code(" LF@s LF@i\n");
 
 	add_code("LABEL return_label2\n");
 	generate_end_of_the_func("ord");
@@ -405,7 +409,8 @@ void generate_function_substr()
 
 	add_code("LABEL loop\n");
 	add_code("GETCHAR LF@sign LF@s LF@i\n");
-	add_code("CONCAT LF@retval1 LF@retval1 LF@sign\n");
+	add_code("CONCAT "); add_code("LF@retval"); add_code_index(1);
+    add_code(" LF@retval"); add_code_index(1); add_code(" LF@sign\n");
 
 	add_code("ADD LF@i LF@i int@1\n");
 	add_code("GT LF@tmp LF@i LF@j\n");
@@ -421,7 +426,8 @@ void generate_function_tointeger()
 	generate_start_of_the_func("tointeger");
 	generate_retval(1, NIL);
 	generate_func_param_assign("f", 1);
-	add_code("FLOAT2INT LF@retval1 LF@f\n");
+	add_code("FLOAT2INT "); add_code("LF@retval");
+    add_code_index(1); add_code(" LF@f\n");
 	generate_end_of_the_func("tointeger");
 }
 
@@ -450,7 +456,10 @@ void generate_function_readn()
 {
 	generate_start_of_the_func("readn");
 	generate_retval(1, NUMBER);
-	add_code("READ LF@retval1 float\n");
+
+	add_code("READ "); add_code("LF@retval");
+    add_code_index(1); add_code(" float\n");
+
 	generate_end_of_the_func("readn");
 }
 
@@ -458,7 +467,10 @@ void generate_function_readi()
 {
 	generate_start_of_the_func("readi");
 	generate_retval(1, INTEGER);
-	add_code("READ LF@retval1 int\n");
+
+	add_code("READ "); add_code("LF@retval");
+    add_code_index(1); add_code(" int\n");
+
 	generate_end_of_the_func("readi");
 }
 
@@ -466,7 +478,10 @@ void generate_function_reads()
 {
 	generate_start_of_the_func("reads");
 	generate_retval(1, STRING);
-	add_code("READ LF@retval1 string\n");
+
+	add_code("READ "); add_code("LF@retval");
+    add_code_index(1); add_code(" string\n");
+
 	generate_end_of_the_func("reads");
 }
 
