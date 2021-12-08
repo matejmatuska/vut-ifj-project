@@ -26,6 +26,7 @@ void init_ST_stack(ST_stack *stack);                                    // initi
 
 // returns number of items on stack (current nesting level) starting from 0
 size_t st_stack_level(ST_stack *stack);
+size_t st_stack_uid(ST_stack *stack);
 
 sym_tab_t *top_table(ST_stack *stack);                             // current table of symbols
 
