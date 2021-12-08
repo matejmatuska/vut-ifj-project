@@ -90,5 +90,7 @@ void add_code_float(double integer);
 void generate_operand(token_t* operand);
 void generate_type_check_before_asign_retval(int index, sym_tab_datatype from_type, sym_tab_datatype to_type);
 void generate_nil_check();
+void generate_conversion_function_bf_op1();
+void generate_conversion_function_bf_op2();
 //
 #endif 
