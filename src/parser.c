@@ -626,12 +626,12 @@ bool st_local() {
         return false;
     }
 
-        if(isfunc(&scope, ID_NAME())){
-            ERROR = UNDEFINED_ERR;
+    if(isfunc(&scope, ID_NAME())){
+        ERROR = UNDEFINED_ERR;
         dyn_str_free(name);
-            delete_data_name(&par_type);
-            return false;
-        }
+        delete_data_name(&par_type);
+        return false;
+    }
 
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
@@ -651,13 +651,11 @@ bool st_local() {
 
     par_type = create_name_data(get_datatype(), name);
     data_type par_typ = name_to_type(&par_type);
-//   generate_init_variable(name->s, get_datatype());
 
     num = 1;
 
     GET_NEXT_TOKEN();
     if (TOK_IS_TYPE(TOKEN_TYPE_EQUAL)) {
-        //sym_tab_add_data_var(item_to_add, create_data_type(type), true, true);
         GET_NEXT_TOKEN();
         if (TOK_IS_ID) {
 
