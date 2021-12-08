@@ -113,6 +113,8 @@ void generate_type_check_before_operation(sym_tab_datatype type1, sym_tab_dataty
 	}
 }
 
+
+
 void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char* var_id, sym_tab_datatype to_type)
 {
 	
@@ -256,7 +258,6 @@ void generate_number_of_params(int params_amount)
 void generate_param_before_call(int index, token_t* param)
 {
 	add_code("DEFVAR TF@%"); add_code_int(index); add_code("\n");
-	//add_code("MOVE "); add_code("TF@%"); add_code_int(index); generate_operand(param); add_code("\n");
 	add_code("POPS TF@%"); add_code_int(index); add_code("\n");
 }
 
@@ -281,9 +282,29 @@ void generate_init_variable(char* var_id, sym_tab_datatype type)
 	add_code("MOVE LF@"); add_code(var_id); add_code(" "); generate_default_variable_value(type); add_code("\n");
 }
 
+void generate_while_if_type_check()
+{
+	add_code("#start of the function type_check_before_while_if\n");
+	add_code("LABEL type_check_before_while_if\n");
+	add_code("POPS GF@tmp1\n");
+	add_code("TYPE GF@tmp2 GF@tmp1\n");
+	add_code("JUMPIFEQ __skip__4 GF@tmp2 string@bool \n");
+	add_code("JUMPIFEQ __skip__5 GF@tmp2 string@nil\n");
+	add_code("PUSHS bool@true\n");
+	add_code("RETURN\n");
+	add_code("LABEL __skip__5\n");
+	add_code("PUSHS bool@false\n");
+	add_code("RETURN\n");
+	add_code("LABEL __skip__4\n");
+	add_code("PUSHS GF@tmp1\n");
+	add_code("RETURN\n");
+	add_code("#end of the function type_check_before_while_if\n");
+	add_code("\n");
+}
+
 void generate_conversion_function_bf_op1()
 {
-	add_code("#start_of_the_function conversion_bf_op1\n");
+	add_code("#start of the function conversion_bf_op1\n");
 	add_code("LABEL conversion_func_bf_op1\n");
 	add_code("POPS GF@tmp1\n");
 	add_code("TYPE GF@tmp3 GF@tmp1\n");
@@ -294,13 +315,13 @@ void generate_conversion_function_bf_op1()
 	add_code("LABEL __skip__2\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("RETURN");
-	add_code("#end_of_the_function conversion_bf_op1\n");
+	add_code("#end of the function conversion_bf_op1\n");
 	add_code("\n");
 }
 
 void generate_conversion_function_bf_op2()
 {
-	add_code("#start_of_the_function conversion_bf_op2\n");
+	add_code("#start of the function conversion_bf_op2\n");
 	add_code("LABEL conversion_func_bf_op2\n");
 	add_code("POPS GF@tmp2\n");
 
@@ -315,7 +336,7 @@ void generate_conversion_function_bf_op2()
 	add_code("PUSHS GF@tmp1\n");
 	add_code("PUSHS GF@tmp2\n");
 	add_code("RETURN");
-	add_code("#end_of_the_function conversion_bf_op2\n");
+	add_code("#end of the function conversion_bf_op2\n");
 	add_code("\n");
 
 }
@@ -450,6 +471,7 @@ void generate_built_in_funcs()
 {
 	generate_conversion_function_bf_op1();
 	generate_conversion_function_bf_op2();
+	generate_while_if_type_check();
 	generate_function_write();
 	generate_function_reads();
 	generate_function_readi();
@@ -496,6 +518,11 @@ void generate_end_of_program()
 	add_code("POPFRAME\n");
 	add_code("CLEARS\n");
 	add_code("EXIT int@0\n");
+}
+
+void generate_type_check_before_while_if()
+{
+	add_code("CALL type_check_before_while_if\n");
 }
 
 void generate_start_of_while_head(int while_index)
