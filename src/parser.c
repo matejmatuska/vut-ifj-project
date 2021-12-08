@@ -778,7 +778,7 @@ bool st_if() {
         return false;
     }
     GET_NEXT_TOKEN();
-
+    generate_type_check_before_while_if();
     generate_start_of_if(local_if_index);
     push(&scope);
 
@@ -881,6 +881,7 @@ bool st_while() {
     }
     GET_NEXT_TOKEN();
     push(&scope);
+    generate_type_check_before_while_if();
     generate_start_of_while(local_while_index);
 
 
