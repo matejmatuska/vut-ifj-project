@@ -1,7 +1,7 @@
 #ifndef EXPRESSION_PARSER_H
 #define EXPRESSION_PARSER_H
 
-#include "symbol_stack.h"
+#include "sym_stack.h"
 #include "scanner.h"
 #include "ST_stack.h"
 

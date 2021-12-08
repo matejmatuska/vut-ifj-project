@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 #include "expr_parser.h"
-#include "symbol_stack.h"
+#include "sym_stack.h"
 
 #include "scanner.h"
 #include "ST_stack.h"

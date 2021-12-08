@@ -9,7 +9,7 @@
 #include "dynamic_string.h"
 #include "symtable.h"
 #include "ST_stack.h"
-#include "symbol_stack.h"
+#include "sym_stack.h"
 #include "code_gen.h"
 
 #include "error.h"
