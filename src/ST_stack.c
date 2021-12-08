@@ -6,11 +6,11 @@
   * @param  ST_stack *scope -> current scope's visibility
   * @return top symbol table
 */
-sym_tab_t *top_table(ST_stack *scope)
+sym_tab_t *top_table(ST_stack *stack)
 {
-    if (scope != NULL)
+    if (stack->top != NULL)
     {
-        return scope->localtable;
+        return stack->top->localtable;
     }
     else
         return NULL;
@@ -20,20 +20,20 @@ sym_tab_t *top_table(ST_stack *scope)
   * @param  ST_stack **scope - current scope's visibility
   * @return true if success
 */
-bool push(struct ST_stack **scope)
+bool push(struct ST_stack *stack)
 {
-    ST_stack *new = NULL;
+    st_stack_item_t *new = malloc(sizeof(st_stack_item_t));
     sym_tab_t *table = sym_tab_init();
-    new = (ST_stack *)malloc(sizeof(ST_stack));
     // check if stack was allocated correctly
     if (!new)
     {
         return false;
     }
     // if we are pushing first symbol table (aka global)
-    new->next = *scope;
     new->localtable = table;
-    *scope = new;
+    new->next = stack->top;
+    stack->top = new;
+    stack->level++;
     return true;
 }
 
@@ -42,18 +42,20 @@ bool push(struct ST_stack **scope)
   * @param  ST_stack *scope - current scope's visibility
   * @return bool if success
 */
-bool pop(ST_stack **scope)
+bool pop(ST_stack *stack)
 {
-    ST_stack *tmp;
+    st_stack_item_t *tmp;
     // check if scope is empty
-    if (*scope == NULL)
+    if (stack->top == NULL)
     {
         return false;
     }
-    tmp = *scope;
-    *scope = (*scope)->next;
+    tmp = stack->top;
+    stack->top = stack->top->next;
     sym_tab_free(tmp->localtable);
     free(tmp);
+
+    stack->level--;
     return true;
 }
 /**
@@ -62,9 +64,9 @@ bool pop(ST_stack **scope)
   * @param  sym_tab_key_t key - key we want to find
   * @return found item or NULL if item doesn't exist
 */
-sym_tab_item_t *scope_search(ST_stack **scope, sym_tab_key_t key)
+sym_tab_item_t *scope_search(ST_stack *stack, sym_tab_key_t key)
 {
-    ST_stack *top = *scope;
+    st_stack_item_t *top = stack->top;
     // if symbol table is empty
     if (top == NULL)
     {
@@ -72,7 +74,7 @@ sym_tab_item_t *scope_search(ST_stack **scope, sym_tab_key_t key)
     }
     else
     {
-        ST_stack *temp = top;
+        st_stack_item_t *temp = top;
         while (temp != NULL)
         {
             sym_tab_item_t *tmp = NULL;
@@ -88,10 +90,10 @@ sym_tab_item_t *scope_search(ST_stack **scope, sym_tab_key_t key)
   * Initialize stack
   * @return initialized stack
 */
-ST_stack *init_ST_stack()
+void init_ST_stack(ST_stack *stack)
 {
-    ST_stack *scope = NULL;
-    return scope;
+    stack->top = NULL;
+    stack->level = 0;
 }
 
 /**
@@ -99,9 +101,10 @@ ST_stack *init_ST_stack()
   * @param ST_stack **scope -> current scope's visibilty
   * @return true if succesfuly freed
 */
-bool free_ST_stack(ST_stack **scope)
+bool free_ST_stack(ST_stack *stack)
 {
-    ST_stack *top = *scope;
+    stack->level = 0;
+    st_stack_item_t *top = stack->top;
     // check for empty symbol table
     if (top == NULL)
     {
@@ -112,8 +115,12 @@ bool free_ST_stack(ST_stack **scope)
         // loop through symtables
         while (top != NULL)
         {
-            pop(&top);
+            st_stack_item_t *tmp = top;
+            top = tmp->next;
+            sym_tab_free(tmp->localtable);
+            free(tmp);
         }
+        stack->top = NULL;
         return true;
     }
     return false;
@@ -124,13 +131,13 @@ bool free_ST_stack(ST_stack **scope)
   * @param  sym_tab_key_t key - key we want to check
   * @return true if it's function
 */
-bool isfunc(ST_stack **scope, sym_tab_key_t key)
+bool isfunc(ST_stack *stack, sym_tab_key_t key)
 {
-    if (scope_search(scope, key) == NULL)
+    if (scope_search(stack, key) == NULL)
         return false;
     else
     {
-        if (scope_search(scope, key)->data.item_type == HT_FUNC)
+        if (scope_search(stack, key)->data.item_type == HT_FUNC)
             return true;
         else
             return false;
@@ -142,16 +149,21 @@ bool isfunc(ST_stack **scope, sym_tab_key_t key)
   * @param  sym_tab_key_t key - key we want to check
   * @bool  - true if it's variable
 */
-bool isvar(ST_stack **scope, sym_tab_key_t key)
+bool isvar(ST_stack *stack, sym_tab_key_t key)
 {
 
-    if (scope_search(scope, key) == NULL)
+    if (scope_search(stack, key) == NULL)
         return false;
     else
     {
-        if (scope_search(scope, key)->data.item_type == HT_VAR)
+        if (scope_search(stack, key)->data.item_type == HT_VAR)
             return true;
         else
             return false;
     }
+}
+
+size_t st_stack_level(ST_stack *stack)
+{
+    return stack->level;
 }

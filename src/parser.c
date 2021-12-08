@@ -158,7 +158,9 @@ data_type name_to_type(name_and_data *nameAndData);
 data_type_t sym_data_to_data_type(sym_tab_datatype data);
 
 int parse() {
-    scope = init_ST_stack();
+    scope = malloc(sizeof(ST_stack));
+    init_ST_stack(scope);
+
     token = malloc(sizeof(token_t));
     token_init(token);
     get_target(stdout);
@@ -169,7 +171,8 @@ int parse() {
 
     ABSOLUTELY_FREE_TOKEN(token);
 
-    free_ST_stack(&scope);
+    free_ST_stack(scope);
+    free(scope);
     if(ERROR == 0) {
         code_in_to_file();
     }
@@ -194,14 +197,14 @@ int program() {
         return ERROR;
     }
     generate_program_head();
-    push(&scope);
+    push(scope);
     generate_explicit_fnc();
 
 //    generate_newframe();
     if (!body())
         return ERROR;
 
-    if(!is_defined(scope->localtable)){
+    if(!is_defined(scope->top->localtable)){
        ERROR = UNDEFINED_ERR;
        return false;
     }
@@ -234,7 +237,7 @@ bool body() {
         BLOCK_NUMBER = 0;
     } else if (TOK_IS_ID) {
 
-        if (isfunc(&scope, ID_NAME()) == true) {
+        if (isfunc(scope, ID_NAME()) == true) {
             CHECK_GLOBALFRAME
             if (!fnc_id()) {
                 return false;
@@ -278,7 +281,7 @@ bool fnc_def() {
         }
     }
     generate_start_of_the_func(ID_NAME());
-    push(&scope);
+    push(scope);
   //  generate_explicit_fnc();
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_LEFTB)) {
@@ -359,7 +362,7 @@ bool fnc_def() {
         i++;
         generate_retval_nil_asign(i);
     }
-    pop(&scope);
+    pop(scope);
     generate_end_of_the_func((char*)act_fnc->key);
 
     return true;
@@ -381,7 +384,7 @@ bool glob_def() {
         return false;
     } else {
         item = SYM_FIND();
-        item = scope_search(&scope, ID_NAME());
+        item = scope_search(scope, ID_NAME());
         if (item == NULL) {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
             sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num, ret_num);
@@ -579,7 +582,7 @@ bool st_list() {
         if (!st_return())
             return false;
     } else if (TOK_IS_ID) {
-        if (isfunc(&scope, ID_NAME())) {
+        if (isfunc(scope, ID_NAME())) {
             if (!fnc_id()) {
                 return false;
             }
@@ -626,7 +629,7 @@ bool st_local() {
         return false;
     }
 
-    if(isfunc(&scope, ID_NAME())){
+    if(isfunc(scope, ID_NAME())){
         ERROR = UNDEFINED_ERR;
         dyn_str_free(name);
         delete_data_name(&par_type);
@@ -659,13 +662,13 @@ bool st_local() {
         GET_NEXT_TOKEN();
         if (TOK_IS_ID) {
 
-            if (isfunc(&scope, ID_NAME())) {
+            if (isfunc(scope, ID_NAME())) {
                 if (!st_fnc_id(&par_type, &num)) {
                     delete_data_name(&par_type);
                     delete_data_types(&par_typ);
                     return false;
                 }
-            } else if (isvar(&scope, ID_NAME())) {
+            } else if (isvar(scope, ID_NAME())) {
                 if (!expr(&par_type, &num)) {
                     delete_data_name(&par_type);
                     delete_data_types(&par_typ);
@@ -735,12 +738,12 @@ bool st_if() {
 
     if (TOK_IS_ID) {
 
-        if (isfunc(&scope, ID_NAME())) {
+        if (isfunc(scope, ID_NAME())) {
             if (!st_fnc_id(&par_type, &num)) {
                 delete_data_name(&par_type);
                 return false;
             }
-        } else if (isvar(&scope, ID_NAME())) {
+        } else if (isvar(scope, ID_NAME())) {
             if (!expr(&par_type, &num)) {
                 delete_data_name(&par_type);
                 return false;
@@ -778,15 +781,15 @@ bool st_if() {
     GET_NEXT_TOKEN();
     generate_type_check_before_while_if();
     generate_start_of_if(local_if_index);
-    push(&scope);
+    push(scope);
 
     if (!st_list()) {
-        pop(&scope);
+        pop(scope);
         delete_data_name(&par_type);
         return false;
     }
 
-    pop(&scope);
+    pop(scope);
     if (!TOK_IS_KW(KW_ELSE)) {
         ERROR = SYNTAX_ERR;
         delete_data_name(&par_type);
@@ -795,18 +798,18 @@ bool st_if() {
     //   generate_end_of_if(local_if_index);
 
     GET_NEXT_TOKEN();
-    push(&scope);
+    push(scope);
     generate_start_of_else(local_if_index, local_if_index);
 
     if (!st_list()) {
-        pop(&scope);
+        pop(scope);
         delete_data_name(&par_type);
         return false;
     }
 
     generate_end_of_else(local_if_index);
 
-    pop(&scope);
+    pop(scope);
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         delete_data_name(&par_type);
@@ -837,12 +840,12 @@ bool st_while() {
 
     if (TOK_IS_ID) {
 
-        if (isfunc(&scope, ID_NAME())) {
+        if (isfunc(scope, ID_NAME())) {
             if (!st_fnc_id(&par_type, &num)) {
                 delete_data_name(&par_type);
                 return false;
             }
-        } else if (isvar(&scope, ID_NAME())) {
+        } else if (isvar(scope, ID_NAME())) {
             if (!expr(&par_type, &num)) {
                 delete_data_name(&par_type);
                 return false;
@@ -878,17 +881,17 @@ bool st_while() {
         return false;
     }
     GET_NEXT_TOKEN();
-    push(&scope);
+    push(scope);
     generate_type_check_before_while_if();
     generate_start_of_while(local_while_index);
 
 
     if (!st_list()) {
-        pop(&scope);
+        pop(scope);
         delete_data_name(&par_type);
         return false;
     }
-    pop(&scope);
+    pop(scope);
     if (!TOK_IS_KW(KW_END)) {
         ERROR = SYNTAX_ERR;
         delete_data_name(&par_type);
@@ -984,7 +987,7 @@ bool write_next(int * index){
     (*index)++;
     if (is_term()) {
         if(TOK_IS_ID){
-            if(scope_search(&scope, ID_NAME()) == NULL){
+            if(scope_search(scope, ID_NAME()) == NULL){
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
@@ -1020,7 +1023,7 @@ bool write(sym_tab_item_t *item) {
 
         if (is_term()) {
             if(TOK_IS_ID){
-                if(scope_search(&scope, ID_NAME()) == NULL){
+                if(scope_search(scope, ID_NAME()) == NULL){
                     ERROR = UNDEFINED_ERR;
                     return false;
                 }
@@ -1078,7 +1081,7 @@ bool fnc_id() {
     dynamic_string_t name;
     dyn_str_init(&name);
     dyn_str_add_string(&name, ID_NAME());
-    sym_tab_item_t *item = scope_search(&scope, name.s);
+    sym_tab_item_t *item = scope_search(scope, name.s);
     if (item == NULL) {
         dyn_str_clear(&name);
         ERROR = UNDEFINED_ERR;
@@ -1124,7 +1127,7 @@ bool fnc_id() {
 
 
             if (TOK_IS_ID) {
-                sym_tab_item_t *id = scope_search(&scope, ID_NAME());
+                sym_tab_item_t *id = scope_search(scope, ID_NAME());
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
                     dyn_str_clear(&name);
@@ -1226,7 +1229,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);
     dyn_str_add_string(name, ID_NAME());
-    sym_tab_item_t *item = scope_search(&scope, name->s);
+    sym_tab_item_t *item = scope_search(scope, name->s);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
@@ -1278,7 +1281,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             }
 
             if (TOK_IS_ID) {
-                sym_tab_item_t *id = scope_search(&scope, ID_NAME());
+                sym_tab_item_t *id = scope_search(scope, ID_NAME());
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
                     return false;
@@ -1369,7 +1372,7 @@ bool st_next_var_id(name_and_data *var_type, int *var_num) {
     }
     GET_NEXT_TOKEN();
     if (TOK_IS_ID) {
-        if (isfunc(&scope, ID_NAME())) {
+        if (isfunc(scope, ID_NAME())) {
             if (!st_fnc_id(var_type, var_num)) {
                 return false;
             }
@@ -1421,7 +1424,7 @@ bool st_var_id() {
 
     GET_NEXT_TOKEN();
     if (TOK_IS_ID) {
-        if (isfunc(&scope, ID_NAME())) {
+        if (isfunc(scope, ID_NAME())) {
             if (!st_fnc_id(&var_type, &var_num)) {
                 delete_data_name(&var_type);
                 return false;
@@ -1666,11 +1669,11 @@ sym_tab_datatype get_type_to_sym_type() {
 
 // first id is check at call site
 bool id_list(name_and_data *var_type, int *var_num) {
-    if (!isvar(&scope, ID_NAME())) {
+    if (!isvar(scope, ID_NAME())) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
-    sym_tab_item_t *item = scope_search(&scope, ID_NAME());
+    sym_tab_item_t *item = scope_search(scope, ID_NAME());
     sym_tab_add_data_var(item, item->data.return_data_types, true, true);
 
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
@@ -1692,11 +1695,11 @@ bool next_id(name_and_data *var_type, int *var_num) {
         return false;
     }
     GET_NEXT_TOKEN();
-    if (!isvar(&scope, ID_NAME())) {
+    if (!isvar(scope, ID_NAME())) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
-    sym_tab_item_t *item = scope_search(&scope, ID_NAME());
+    sym_tab_item_t *item = scope_search(scope, ID_NAME());
     sym_tab_add_data_var(item, item->data.return_data_types, true, true);
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);
@@ -1826,7 +1829,7 @@ void generate_explicit_fnc() {
 
 int number_of_rec(){
     int index = 0;
-    ST_stack * tmp_scope = scope;
+    st_stack_item_t *tmp_scope = scope->top;
     while (tmp_scope != NULL) {
         tmp_scope = tmp_scope->next;
         index++;
