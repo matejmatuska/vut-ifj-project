@@ -453,9 +453,9 @@ bool param_list(data_type *par_type, int *num) {
     sym_tab_item_t *item;
     (*num)++;
     generate_func_param_assign(ID_NAME(), *num);
-    size_t uid;
-    size_t level;
-    item = scope_search(scope, ID_NAME(),&uid, &level);
+    size_t uid = 0;
+    size_t level = 0;
+    item = sym_tab_add_item(top_table(scope), ID_NAME());
 
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
@@ -465,6 +465,8 @@ bool param_list(data_type *par_type, int *num) {
     GET_NEXT_TOKEN();
     if (!is_type())
         return false;
+
+
     *par_type = create_data_type(get_datatype());
 
     sym_tab_add_data_var(item, create_data_type(get_datatype()), true, true);
