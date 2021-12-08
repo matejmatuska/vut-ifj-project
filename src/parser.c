@@ -1234,9 +1234,9 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                 ERROR = PARAMETERS_ERR;
                 return false;
             }
-            if(TOK_IS_ID) {
-                size_t uid;
-                size_t level;
+
+                size_t uid = 0;
+                size_t level = 0;
                 scope_search(scope, tmp_name->string->s, &uid, &level);
                 index++;
                 generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
@@ -1245,7 +1245,7 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                                                    tmp_name->datatype);
 
 
-            }
+
             tmp_name = tmp_name->next;
             tmp_type = tmp_type->next;
         }
