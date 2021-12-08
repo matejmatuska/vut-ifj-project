@@ -363,6 +363,7 @@ bool fnc_def() {
         generate_retval_nil_asign(i);
     }
     pop(scope);
+
     generate_end_of_the_func((char*)act_fnc->key);
 
     return true;
@@ -1012,14 +1013,8 @@ bool write_next(int * index){
         return false;
     }
 
-    if (st_stack_level(scope) >= level)
         generate_param_for_write(tkn, level, uid);
-    else if (st_stack_level(scope) < level){
-        ERROR = UNDEFINED_ERR;
-        return false;
-    }
-    else
-        generate_param_for_write(tkn, level, uid);
+
 
 
     ABSOLUTELY_FREE_TOKEN(tkn);
@@ -1037,8 +1032,8 @@ bool write(sym_tab_item_t *item) {
             return false;
         }
         GET_NEXT_TOKEN();
-        size_t uid;
-        size_t level;
+        size_t uid = 0;
+        size_t level = 0;
         if (is_term()) {
             if(TOK_IS_ID){
 
@@ -1065,14 +1060,9 @@ bool write(sym_tab_item_t *item) {
             return false;
         }
         index++;
-        if (st_stack_level(scope) >= level)
+
             generate_param_for_write(tkn, level, uid);
-        else if (st_stack_level(scope) < level){
-            ERROR = UNDEFINED_ERR;
-            return false;
-        }
-        else {
-            generate_param_for_write(tkn, level, uid); }
+
         /*        while ()) {
 
                   if (is_term()) {
@@ -1250,15 +1240,10 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                 scope_search(scope, tmp_name->string->s, &uid, &level);
                 index++;
                 generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
-                if (st_stack_level(scope) >= level)
-                    generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
+
+                generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
                                                    tmp_name->datatype);
-                else if (st_stack_level(scope) < level) {
-                    ERROR = UNDEFINED_ERR;
-                    return false;
-                } else
-                    generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
-                                                   tmp_name->datatype);
+
 
             }
             tmp_name = tmp_name->next;
@@ -1297,25 +1282,9 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
         return false;
     }
 
-    // GET_NEXT_TOKEN();
-    //data_type par_typy = NULL;
-    //par_typy = item->data.param_data_types;
     datatypes_list *typ = item->data.param_data_types;
     generate_newframe();
-   // int num = item->data.params;
-   // int par_index = 0;
-   // GET_NEXT_TOKEN();
-    /*
-    if(!fnc_expr(&par_typy, &num, par_index)){
-        return false;
-    }
 
-    if (!TOK_IS_TYPE(TOKEN_TYPE_RIGHTB)) {
-        ERROR = SYNTAX_ERR;
-        return false;
-    }
-
-*/
 
     if (item->data.params != 0) {
         int i = 0;
