@@ -34,20 +34,23 @@ void add_code(char* inst)
 
 void add_code_int(int integer)
 {
-	
 	char tmp[40];
 	sprintf(tmp, "%d", integer);
 	dyn_str_add_string(&code, tmp);
-	
 }
 
 void add_code_float(double integer)
 {
-	
 	char tmp[40];
 	sprintf(tmp, "%a", integer);
 	dyn_str_add_string(&code, tmp);
-	
+}
+
+void add_code_index(int integer)
+{
+	char tmp[40];
+	sprintf(tmp, "-%d", integer);
+	dyn_str_add_string(&code, tmp);
 }
 
 void generate_start_of_the_func(char* func_id)
@@ -527,19 +530,19 @@ void generate_type_check_before_while_if()
 
 void generate_start_of_while_head(int while_index)
 {
-	add_code("LABEL while"); add_code_int(while_index); add_code("\n");
+	add_code("LABEL while"); add_code_index(while_index); add_code("\n");
 }
 
 void generate_start_of_while(int while_index)
 {
 	add_code("POPS GF@tmp1\n");
-	add_code("JUMPIFEQ end_while"); add_code_int(while_index); add_code(" GF@tmp1 bool@false\n");
+	add_code("JUMPIFEQ end_while"); add_code_index(while_index); add_code(" GF@tmp1 bool@false\n");
 }
 
 void generate_end_of_while(int while_index)
 {
-	add_code("JUMP while"); add_code_int(while_index); add_code("\n");
-	add_code("LABEL end_while"); add_code_int(while_index); add_code("\n");
+	add_code("JUMP while"); add_code_index(while_index); add_code("\n");
+	add_code("LABEL end_while"); add_code_index(while_index); add_code("\n");
 }
 
 void generate_start_of_if(int if_index)
