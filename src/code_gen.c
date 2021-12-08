@@ -105,11 +105,11 @@ void generate_type_check_before_operation(sym_tab_datatype type1, sym_tab_dataty
 {
 	if (type1 == NUMBER && type2 == INTEGER)
 	{
-		add_code("CALL conversion_func_bf_op1\n");
+		add_code("CALL !conversion_func_bf_op1\n");
 	}
 	else if (type1 == INTEGER && type2 == NUMBER)
 	{
-		add_code("CALL conversion_func_bf_op2\n");
+		add_code("CALL !conversion_func_bf_op2\n");
 	}
 }
 
@@ -174,16 +174,16 @@ dynamic_string_t* convert_string(char* string)
 	dynamic_string_t* tmp = (dynamic_string_t*)malloc(sizeof(dynamic_string_t));
 	dyn_str_init(tmp);
 	int i = 0;
-	while (string[i] != '\0')
-	{
-		if (string[i] == ' ')
-		{
-			dyn_str_add_string(tmp, "\\032");
-		}
-		else if(string[i] == '\n')
-		{
-			dyn_str_add_string(tmp, "\\010");
-		}
+    while (string[i] != '\0')
+    {
+        if (string[i] == ' ')
+        {
+            dyn_str_add_string(tmp, "\\032");
+        }
+        else if(string[i] == '\n')
+        {
+            dyn_str_add_string(tmp, "\\010");
+        }
         else if(string[i] == '\t')
         {
             dyn_str_add_string(tmp, "\\009");
@@ -192,11 +192,11 @@ dynamic_string_t* convert_string(char* string)
         {
             dyn_str_add_string(tmp, "\\092");
         }
-		else
-			dyn_str_add_character(tmp, string[i]);
-		i++;
-	}
-	return tmp;
+        else
+            dyn_str_add_character(tmp, string[i]);
+        i++;
+    }
+    return tmp;
 }
 
 void generate_operand(token_t* operand)
@@ -285,17 +285,17 @@ void generate_init_variable(char* var_id, sym_tab_datatype type)
 void generate_while_if_type_check()
 {
 	add_code("#start of the function type_check_before_while_if\n");
-	add_code("LABEL type_check_before_while_if\n");
+	add_code("LABEL !type_check_before_while_if\n");
 	add_code("POPS GF@tmp1\n");
 	add_code("TYPE GF@tmp2 GF@tmp1\n");
-	add_code("JUMPIFEQ __skip__4 GF@tmp2 string@bool \n");
-	add_code("JUMPIFEQ __skip__5 GF@tmp2 string@nil\n");
+	add_code("JUMPIFEQ !skip_4 GF@tmp2 string@bool \n");
+	add_code("JUMPIFEQ !skip_5 GF@tmp2 string@nil\n");
 	add_code("PUSHS bool@true\n");
 	add_code("RETURN\n");
-	add_code("LABEL __skip__5\n");
+	add_code("LABEL !skip_5\n");
 	add_code("PUSHS bool@false\n");
 	add_code("RETURN\n");
-	add_code("LABEL __skip__4\n");
+	add_code("LABEL !skip_4\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("RETURN\n");
 	add_code("#end of the function type_check_before_while_if\n");
@@ -305,14 +305,14 @@ void generate_while_if_type_check()
 void generate_conversion_function_bf_op1()
 {
 	add_code("#start of the function conversion_bf_op1\n");
-	add_code("LABEL conversion_func_bf_op1\n");
+	add_code("LABEL !conversion_func_bf_op1\n");
 	add_code("POPS GF@tmp1\n");
 	add_code("TYPE GF@tmp3 GF@tmp1\n");
-	add_code("JUMPIFEQ __skip__2 GF@tmp3 string@nil\n");
+	add_code("JUMPIFEQ !skip_2 GF@tmp3 string@nil\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("INT2FLOATS\n");
 	add_code("RETURN\n");
-	add_code("LABEL __skip__2\n");
+	add_code("LABEL !skip_2\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("RETURN");
 	add_code("#end of the function conversion_bf_op1\n");
@@ -322,17 +322,17 @@ void generate_conversion_function_bf_op1()
 void generate_conversion_function_bf_op2()
 {
 	add_code("#start of the function conversion_bf_op2\n");
-	add_code("LABEL conversion_func_bf_op2\n");
+	add_code("LABEL !conversion_func_bf_op2\n");
 	add_code("POPS GF@tmp2\n");
 
 	add_code("POPS GF@tmp1\n");
 	add_code("TYPE GF@tmp3 GF@tmp1\n");
-	add_code("JUMPIFEQ __skip__3 GF@tmp3 string@nil\n");
+	add_code("JUMPIFEQ !skip_3 GF@tmp3 string@nil\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("INT2FLOATS\n");
 	add_code("PUSHS GF@tmp2\n");
 	add_code("RETURN\n");
-	add_code("LABEL __skip__3\n");
+	add_code("LABEL !skip_3\n");
 	add_code("PUSHS GF@tmp1\n");
 	add_code("PUSHS GF@tmp2\n");
 	add_code("RETURN");
@@ -492,7 +492,7 @@ void generate_program_head()
 	add_code("DEFVAR GF@tmp3\n");
 	add_code("JUMP __MAIN__1\n");
 	add_code("\n");
-	add_code("LABEL error_label\n");
+	add_code("LABEL !error_label\n");
 	add_code("CLEARS\n");
 	add_code("EXIT int@8\n");
 	add_code("\n");
@@ -522,7 +522,7 @@ void generate_end_of_program()
 
 void generate_type_check_before_while_if()
 {
-	add_code("CALL type_check_before_while_if\n");
+	add_code("CALL !type_check_before_while_if\n");
 }
 
 void generate_start_of_while_head(int while_index)
@@ -569,10 +569,10 @@ void generate_nil_check()
 {
 	add_code("POPS GF@tmp1\n");
 	add_code("TYPE GF@tmp3 GF@tmp1\n");
-	add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+	add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
 	add_code("POPS GF@tmp2\n");
 	add_code("TYPE GF@tmp3 GF@tmp2\n");
-	add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+	add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
 	add_code("PUSHS GF@tmp2\n");
 	add_code("PUSHS GF@tmp1\n");
 }
@@ -600,10 +600,10 @@ void generate_operation(token_type operation)
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
-		add_code("JUMPIFNEQ next_label GF@tmp1 float@0x0p+0\n");
+		add_code("JUMPIFNEQ !next_label GF@tmp1 float@0x0p+0\n");
 		add_code("CLEARS \n");
 		add_code("EXIT int@9\n");
-		add_code("LABEL next_label\n");
+		add_code("LABEL !next_label\n");
 		add_code("PUSHS GF@tmp1\n");
 		add_code("DIVS\n");
 		break;
@@ -611,10 +611,10 @@ void generate_operation(token_type operation)
 		generate_nil_check();
 
 		add_code("POPS GF@tmp1\n");
-		add_code("JUMPIFNEQ next_label GF@tmp1 int@0\n");
+		add_code("JUMPIFNEQ !next_label GF@tmp1 int@0\n");
 		add_code("CLEARS \n");
 		add_code("EXIT int@9\n");
-		add_code("LABEL next_label\n");
+		add_code("LABEL !next_label\n");
 		add_code("INT2FLOATS\n");
 		add_code("PUSHS GF@tmp1\n");
 		add_code("INT2FLOATS\n");
@@ -671,7 +671,7 @@ void generate_operation(token_type operation)
 		
 		add_code("POPS GF@tmp1\n");
 		add_code("TYPE GF@tmp3 GF@tmp1\n");
-		add_code("JUMPIFEQ error_label GF@tmp3 string@nil\n");
+		add_code("JUMPIFEQ !error_label GF@tmp3 string@nil\n");
 		add_code("PUSHS GF@tmp1\n");
 		
 		add_code("POPS GF@tmp1\n");
