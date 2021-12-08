@@ -23,7 +23,9 @@ sym_tab_t *top_table(ST_stack *stack)
 bool push(struct ST_stack *stack)
 {
     st_stack_item_t *new = malloc(sizeof(st_stack_item_t));
-    sym_tab_t *table = sym_tab_init(stack->uid++, stack->level); // increase the uid to keep it u(nique)
+
+    (stack->uid)++; // increase the uid to keep it u(nique)
+    sym_tab_t *table = sym_tab_init(stack->uid, stack->level);
 
     // check if stack was allocated correctly
     if (!new)
@@ -181,4 +183,9 @@ bool isvar(ST_stack *stack, sym_tab_key_t key)
 size_t st_stack_level(ST_stack *stack)
 {
     return stack->level;
+}
+
+size_t st_stack_uid(ST_stack *stack)
+{
+    return stack->uid;
 }
