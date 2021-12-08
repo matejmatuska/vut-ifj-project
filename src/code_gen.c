@@ -508,7 +508,7 @@ void generate_program_head()
 	add_code("DEFVAR GF@tmp1\n");
 	add_code("DEFVAR GF@tmp2\n");
 	add_code("DEFVAR GF@tmp3\n");
-	add_code("JUMP __MAIN__1\n");
+	add_code("JUMP !MAIN"); add_code_index(1); add_code("\n");
 	add_code("\n");
 	add_code("LABEL !error_label\n");
 	add_code("CLEARS\n");
@@ -519,7 +519,7 @@ void generate_program_head()
 
 void generate_start_of_program(int index)
 {
-	add_code("LABEL __MAIN__"); add_code_int(index); add_code("\n");
+	add_code("LABEL !MAIN"); add_code_index(index); add_code("\n");
 	add_code("CREATEFRAME\n");
 	add_code("PUSHFRAME\n");
 	
@@ -528,7 +528,7 @@ void generate_start_of_program(int index)
 void generate_continue_of_program(int next_index)
 {
 	add_code("POPFRAME\n");
-	add_code("JUMP __MAIN__"); add_code_int(next_index + 1); add_code("\n");
+	add_code("JUMP !MAIN"); add_code_index(next_index + 1); add_code("\n");
 }
 
 void generate_end_of_program()
