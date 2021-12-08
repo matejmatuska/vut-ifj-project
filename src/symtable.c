@@ -1,5 +1,6 @@
 #include "symtable.h"
 #include "ST_stack.h"
+#include "dynamic_string.h"
 #include "error.h"
 
 /**
@@ -145,6 +146,8 @@ void delete_data_name(name_and_data *first)
 	while (current != NULL)
 	{
 		next = current->next;
+        if (current->string)
+            dyn_str_free(current->string);
 		free(current);
 		current = next;
 	}
