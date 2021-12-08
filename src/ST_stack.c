@@ -22,6 +22,7 @@ sym_tab_t *top_table(ST_stack *stack)
 */
 bool push(struct ST_stack *stack)
 {
+    stack->level++;
     st_stack_item_t *new = malloc(sizeof(st_stack_item_t));
 
     (stack->uid)++; // increase the uid to keep it u(nique)
@@ -36,7 +37,6 @@ bool push(struct ST_stack *stack)
     new->localtable = table;
     new->next = stack->top;
     stack->top = new;
-    stack->level++;
     return true;
 }
 
