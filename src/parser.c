@@ -1244,19 +1244,23 @@ bool check_returns(name_and_data *var_type, sym_tab_item_t *item, int *var_num) 
                 ERROR = PARAMETERS_ERR;
                 return false;
             }
-            size_t uid;
-            size_t level;
-            scope_search(scope, ID_NAME(),&uid, &level);
-            index++;
-            generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
-            if (st_stack_level(scope) >= level)
-                generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid, tmp_name->datatype);
-            else if (st_stack_level(scope) < level){
-                ERROR = UNDEFINED_ERR;
-                return false;
+            if(TOK_IS_ID) {
+                size_t uid;
+                size_t level;
+                scope_search(scope, tmp_name->string->s, &uid, &level);
+                index++;
+                generate_type_check_before_asign(tmp_type->datatype, tmp_name->datatype);
+                if (st_stack_level(scope) >= level)
+                    generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
+                                                   tmp_name->datatype);
+                else if (st_stack_level(scope) < level) {
+                    ERROR = UNDEFINED_ERR;
+                    return false;
+                } else
+                    generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid,
+                                                   tmp_name->datatype);
+
             }
-            else
-                generate_after_call_var_assign(index, tmp_type->datatype, tmp_name->string->s, level, uid, tmp_name->datatype);
             tmp_name = tmp_name->next;
             tmp_type = tmp_type->next;
         }
@@ -1614,12 +1618,12 @@ bool expr(name_and_data *types, int *num) {
         }
 
         if (typ == sym_data_to_data_type((ptr)->datatype) || (typ == T_INT && (ptr)->datatype == NUMBER) || typ == T_NIL) {
-            size_t uid;
-            size_t level;
-            if(scope_search(scope, (ptr)->string->s,&uid, &level) == NULL){
+            size_t uid = st_stack_uid(scope);
+            size_t level = st_stack_level(scope);
+/*            if(scope_search(scope, (ptr)->string->s,&uid, &level) == NULL){
                 ERROR = UNDEFINED_ERR;
                 return false;
-            }
+            }*/
             if (st_stack_level(scope) >= level)
                 generate_pop((ptr)->string->s, level, uid);
             else if (st_stack_level(scope) < level){
