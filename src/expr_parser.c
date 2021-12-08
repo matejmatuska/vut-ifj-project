@@ -327,7 +327,6 @@ static int rule_length(data_type_t dtype, data_type_t *res_type)
     if (dtype != T_STRING)
         return UNDEFINED_ERR;
 
-    //TODO generate code for string length
     *res_type = T_INT;
     return SYNTAX_OK;
 }
@@ -584,7 +583,8 @@ static int check_end_of_expr()
         return_token(next);
         return SYNTAX_OK;
     }
-    //TODO free token in case of error
+    token_free(next);
+    free(next);
     return SYNTAX_ERR;
 }
 
