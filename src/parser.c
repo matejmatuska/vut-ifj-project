@@ -943,11 +943,11 @@ bool fnc_expr(data_type *types, int *num, int par_index) {
     if (ERROR == 0 && *types != NULL) {
         if (TOK_IS_ID) {
             *num -= 1;
-            generate_param_before_call(par_index, token); //todo maybe delete
+            generate_param_before_call(par_index); //todo maybe delete
             return true;
         }
         if (typ == sym_data_to_data_type((*types)->datatype) || (typ == T_INT && (*types)->datatype == NUMBER)) {
-            generate_param_before_call(par_index, token);
+            generate_param_before_call(par_index);
             *types = (*types)->next;
 
             *num -= 1;
@@ -961,7 +961,7 @@ bool fnc_expr(data_type *types, int *num, int par_index) {
         ERROR = TYPE_INCOMPATIBILITY_ERR;
         return false;
     } else if (*types == NULL) {
-        generate_param_before_call(par_index, token);
+        generate_param_before_call(par_index);
         *num -= 1;
         if (!fnc_expr(types, num, par_index)) {
             return false;
@@ -1155,7 +1155,7 @@ bool fnc_id() {
                 generate_push(token);
             }
             i++;
-            generate_param_before_call(i, token);
+            generate_param_before_call(i);
             typ = typ->next;
             GET_NEXT_TOKEN();
 
@@ -1308,7 +1308,7 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             }
 
             generate_push(token);
-            generate_param_before_call(i, token);
+            generate_param_before_call(i);
 
 
             typ = item->data.param_data_types->next;
@@ -1575,9 +1575,9 @@ bool expr(name_and_data *types, int *num) {
             if (TOK_IS_ID) {
                 return true;
             } else
-            if (!expr(&ptr, num)) {
-                return false;
-            }
+                if (!expr(&ptr, num)) {
+                    return false;
+                }
 
             return true;
         }
