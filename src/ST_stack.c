@@ -141,7 +141,10 @@ bool free_ST_stack(ST_stack *stack)
 */
 bool isfunc(ST_stack *stack, sym_tab_key_t key)
 {
-    sym_tab_item_t *item = scope_search(stack, key);
+    size_t uid;
+    size_t level;
+
+    sym_tab_item_t *item = scope_search(stack, key,&uid, &level);
     if (item == NULL)
         return false;
     else
@@ -160,7 +163,10 @@ bool isfunc(ST_stack *stack, sym_tab_key_t key)
 */
 bool isvar(ST_stack *stack, sym_tab_key_t key)
 {
-    sym_tab_item_t *item = scope_search(stack, key);
+    size_t uid;
+    size_t level;
+
+    sym_tab_item_t *item = scope_search(stack, key,&uid, &level);
     if (item == NULL)
         return false;
     else

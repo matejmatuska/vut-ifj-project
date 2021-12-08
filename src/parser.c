@@ -384,7 +384,9 @@ bool glob_def() {
         return false;
     } else {
         item = SYM_FIND();
-        item = scope_search(scope, ID_NAME());
+        size_t uid;
+        size_t level;
+        item = scope_search(scope, ID_NAME(),&uid, &level);
         if (item == NULL) {
             item = sym_tab_add_item(top_table(scope), ID_NAME());
             sym_tab_add_data_function(item, ret_type, par_type, true, false, par_num, ret_num);
@@ -451,7 +453,9 @@ bool param_list(data_type *par_type, int *num) {
     sym_tab_item_t *item;
     (*num)++;
     generate_func_param_assign(ID_NAME(), *num);
-    item = sym_tab_add_item(top_table(scope), ID_NAME());
+    size_t uid;
+    size_t level;
+    item = scope_search(scope, ID_NAME(),&uid, &level);
 
     GET_NEXT_TOKEN();
     if (!TOK_IS_TYPE(TOKEN_TYPE_DEF)) {
@@ -987,7 +991,9 @@ bool write_next(int * index){
     (*index)++;
     if (is_term()) {
         if(TOK_IS_ID){
-            if(scope_search(scope, ID_NAME()) == NULL){
+            size_t uid;
+            size_t level;
+            if(scope_search(scope, ID_NAME(),&uid, &level) == NULL){
                 ERROR = UNDEFINED_ERR;
                 return false;
             }
@@ -1023,7 +1029,10 @@ bool write(sym_tab_item_t *item) {
 
         if (is_term()) {
             if(TOK_IS_ID){
-                if(scope_search(scope, ID_NAME()) == NULL){
+                size_t uid;
+                size_t level;
+                item = scope_search(scope, ID_NAME(),&uid, &level);
+                if(scope_search(scope, ID_NAME(), &uid, &level) == NULL){
                     ERROR = UNDEFINED_ERR;
                     return false;
                 }
@@ -1081,7 +1090,9 @@ bool fnc_id() {
     dynamic_string_t name;
     dyn_str_init(&name);
     dyn_str_add_string(&name, ID_NAME());
-    sym_tab_item_t *item = scope_search(scope, name.s);
+    size_t uid;
+    size_t level;
+    sym_tab_item_t *item = scope_search(scope, name.s , &uid, &level);
     if (item == NULL) {
         dyn_str_clear(&name);
         ERROR = UNDEFINED_ERR;
@@ -1127,7 +1138,9 @@ bool fnc_id() {
 
 
             if (TOK_IS_ID) {
-                sym_tab_item_t *id = scope_search(scope, ID_NAME());
+                size_t uid;
+                size_t level;
+                sym_tab_item_t *id = scope_search(scope, ID_NAME(),&uid, &level);
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
                     dyn_str_clear(&name);
@@ -1229,7 +1242,9 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);
     dyn_str_add_string(name, ID_NAME());
-    sym_tab_item_t *item = scope_search(scope, name->s);
+    size_t uid;
+    size_t level;
+    sym_tab_item_t *item = scope_search(scope, name->s, &uid, &level);
     if (item == NULL) {
         ERROR = UNDEFINED_ERR;
         return false;
@@ -1281,7 +1296,9 @@ bool st_fnc_id(name_and_data *var_type, int *var_num) {
             }
 
             if (TOK_IS_ID) {
-                sym_tab_item_t *id = scope_search(scope, ID_NAME());
+                size_t uid;
+                size_t level;
+                sym_tab_item_t *id = scope_search(scope, ID_NAME(), &uid, &level);
                 if (id == NULL) {
                     ERROR = UNDEFINED_ERR;
                     return false;
@@ -1673,7 +1690,9 @@ bool id_list(name_and_data *var_type, int *var_num) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
-    sym_tab_item_t *item = scope_search(scope, ID_NAME());
+    size_t uid;
+    size_t level;
+    sym_tab_item_t *item = scope_search(scope, ID_NAME(),&uid, &level);
     sym_tab_add_data_var(item, item->data.return_data_types, true, true);
 
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
@@ -1699,7 +1718,9 @@ bool next_id(name_and_data *var_type, int *var_num) {
         ERROR = UNDEFINED_ERR;
         return false;
     }
-    sym_tab_item_t *item = scope_search(scope, ID_NAME());
+    size_t uid;
+    size_t level;
+    sym_tab_item_t *item = scope_search(scope, ID_NAME(),&uid, &level);
     sym_tab_add_data_var(item, item->data.return_data_types, true, true);
     dynamic_string_t *name = (dynamic_string_t *) malloc(sizeof(dynamic_string_t));
     dyn_str_init(name);

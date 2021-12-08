@@ -454,7 +454,9 @@ static data_type_t get_token_data_type(token_t token)
     {
         // adapt symtable api to our api
         sym_tab_key_t key = token.attribute.string->s;
-        sym_tab_item_t *item = scope_search(ststack, key);
+        size_t uid;
+        size_t level;
+        sym_tab_item_t *item = scope_search(ststack, key, &uid, &level);
         if (!item || !item->data.return_data_types)
             return T_UNKNOWN; // the variable is not defined
 
