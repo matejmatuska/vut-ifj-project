@@ -138,11 +138,11 @@ void generate_after_call_var_assign(int index, sym_tab_datatype from_type, char*
 	add_code("MOVE LF@"); add_id(var_id, level, UID); add_code(" TF@retval"); add_code_index(index); add_code("\n");
 }
 
-void generate_func_param_assign(char* param_id, size_t level, size_t UID,int param_index)
+void generate_func_param_assign(char* param_id, size_t level, size_t UID, int param_index)
 {
 	add_code("DEFVAR LF@"); add_id(param_id,level,UID); add_code("\n");
 	add_code("MOVE LF@"); add_id(param_id, level, UID); 
-	add_code(" LF@%"); add_code(param_index); add_code("\n");
+	add_code(" LF@%"); add_code_int(param_index); add_code("\n");
 }
 
 void generate_default_variable_value(sym_tab_datatype type)
