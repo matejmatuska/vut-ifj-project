@@ -531,7 +531,7 @@ static int shift_w_handle(sym_stack_t *stack, token_t *token,
         if (st_stack_level(ststack) >= var_level)
         {
             // use var level
-            generate_push(token, var_uid, var_level);
+            generate_push(token, var_level, var_uid);
         }
     }
 
