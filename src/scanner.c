@@ -1,3 +1,8 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+Matěj Schäfer, xschaf00
+*/
 #include "scanner.h"
 #include "error.h"
 

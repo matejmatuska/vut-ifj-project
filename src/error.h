@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 #ifndef ERROR_H
 #define ERROR_H
 

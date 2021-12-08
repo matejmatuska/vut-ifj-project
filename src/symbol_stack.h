@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Matej Matuška, xmatus36
+*/
 /**
  * Stack used for bottom up expression parsing
  */

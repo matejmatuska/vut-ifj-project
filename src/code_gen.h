@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Matěj Schäfer, xschaf00
+*/
 #ifndef CODE_GENERATOR_H
 #define CODE_GENERATOR_H
 

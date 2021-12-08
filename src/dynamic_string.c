@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 #include "dynamic_string.h"
 #include <stdio.h>
 #include <stdlib.h>

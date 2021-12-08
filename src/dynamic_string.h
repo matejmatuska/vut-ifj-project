@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 #ifndef DYNAMIC_STRING_H
 #define DYNAMIC_STRING_H
 

@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Matěj Schäfer, xschaf00
+*/
 #include "dynamic_string.h"
 #include "code_gen.h"
 #include <stdio.h>

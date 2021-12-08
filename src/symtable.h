@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 // sym_tab.h -- IJC homework 2 2021
 // License: None (Public domain)
 

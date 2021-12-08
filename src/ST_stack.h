@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 #ifndef ST_STACK
 #define ST_STACK
 

@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Matej Matuška, xmatus36
+*/
 #include <stdlib.h>
 #include <stdbool.h>
 

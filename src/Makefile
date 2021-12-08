@@ -1,3 +1,7 @@
+#
+#Implementace překladače imperativního jazyka IFJ21
+#Matej Matuška, xmatus36
+#
 CFLAGS= -std=c99 -Wall -Wextra -pedantic -g
 
 ARCHIVE=xpokor85.zip

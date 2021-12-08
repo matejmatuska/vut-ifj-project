@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Matej Matuška, xmatus36
+*/
 #ifndef EXPRESSION_PARSER_H
 #define EXPRESSION_PARSER_H
 

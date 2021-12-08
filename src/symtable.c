@@ -1,3 +1,7 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Júlia Mazáková, xmazak02
+*/
 #include "symtable.h"
 #include "ST_stack.h"
 #include "dynamic_string.h"

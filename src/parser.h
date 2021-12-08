@@ -1,3 +1,8 @@
+/*
+Implementace překladače imperativního jazyka IFJ21
+Martin Pokorný, xpokor85
+Matej Matuška, xmatus36
+*/
 #ifndef PARSER_H
 #define PARSER_H
 
